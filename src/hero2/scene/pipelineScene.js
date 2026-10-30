@@ -276,7 +276,7 @@ export class PipelineScene {
   }
 
   buildAnchors() {
-    const { s } = this
+    const { s, W, H } = this
     if (!this.mobile) {
       this.anchors = this.stationD.map((d, i) => {
         const p = i === 6 ? this.widgetPos() : this.pos(d)
@@ -286,7 +286,7 @@ export class PipelineScene {
         let by = p.y
         if (i === 6) {
           bx = W * 0.86
-          by = Math.min(H - 34 * s, p.y - 4 * s)
+          by = Math.min(H - 48 * s, p.y - 12 * s)
         }
         return { x: p.x, y: p.y, bx, by }
       })
