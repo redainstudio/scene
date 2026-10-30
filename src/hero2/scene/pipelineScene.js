@@ -116,14 +116,29 @@ export class PipelineScene {
       const hdr = Math.max(this.laneAmp + this.gateR + 44 * s, 0.85 * R + 46 * s)
       lineY = Math.max(H * 0.44, 92 + hdr)
       this.hdr = hdr
-      wps = [[x0, lineY], [x0 + len, lineY]]
-      cornerR = 0
+      // The rail now breathes around the brain instead of reading as one
+      // perfectly straight conveyor: a raised ingestion approach and a
+      // lower response branch create a more spatial, hand-composed flow.
+      C = { x: x0 + len * 0.531, y: lineY - 0.07 * R }
+      const entryX = C.x - R * 0.99
+      const exitX = C.x + R * 0.99
+      wps = [
+        [x0, lineY],
+        [x0 + len * 0.17, lineY],
+        [x0 + len * 0.255, lineY - 25 * s],
+        [entryX - 24 * s, lineY - 25 * s],
+        [entryX, lineY],
+        [exitX, lineY],
+        [x0 + len * 0.755, lineY + 22 * s],
+        [x0 + len * 0.855, lineY + 22 * s],
+        [x0 + len, lineY],
+      ]
+      cornerR = 24 * s
       const D = (f) => f * len
       Object.assign(st, {
         upload: 36 * s, ext: D(0.155), chunk: D(0.285), embed: D(0.338),
         index: D(0.392), retrieve: D(0.7), rerank: D(0.765), verify: D(0.83), answer: D(0.905), widget: len,
       })
-      C = { x: x0 + D(0.531), y: lineY - 0.07 * R }
       this.stubOff = -100 * s
       this.speed = len * 0.068
       this.x0 = x0
