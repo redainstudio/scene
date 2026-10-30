@@ -104,10 +104,10 @@ export class PipelineScene {
     if (!mobile) {
       // Desktop: a true top-to-bottom serpentine pipeline.
       // Stages alternate between left and right lanes around a compact brain hub.
-      const s = clamp(Math.min(W / 760, H / 650), 0.82, 1.05)
+      const s = clamp(Math.min(W / 820, H / 680), 0.86, 1.08)
       const u = 1.0 * s
-      R = 72 * s
-      C = { x: W * 0.5, y: H * 0.49 }
+      R = 88 * s
+      C = { x: W * 0.5, y: H * 0.485 }
       lineY = C.y
       this.s = s
       this.u = u
@@ -119,18 +119,18 @@ export class PipelineScene {
 
       const point = (x, y) => [W * x, H * y]
       wps = [
-        point(0.23, 0.035),
-        point(0.23, 0.08),
-        point(0.77, 0.19),
-        point(0.23, 0.32),
-        point(0.37, 0.41),
-        point(0.50, 0.49),
-        point(0.63, 0.56),
-        point(0.77, 0.62),
-        point(0.23, 0.73),
-        point(0.77, 0.84),
-        point(0.50, 0.955),
-        point(0.50, 0.985),
+        point(0.12, 0.025),
+        point(0.12, 0.075),
+        point(0.88, 0.185),
+        point(0.12, 0.315),
+        point(0.34, 0.405),
+        point(0.50, 0.485),
+        point(0.66, 0.555),
+        point(0.88, 0.605),
+        point(0.12, 0.725),
+        point(0.88, 0.825),
+        point(0.50, 0.905),
+        point(0.50, 0.935),
       ]
       cornerR = 30 * s
       this.stubOff = -42 * s
@@ -180,16 +180,16 @@ export class PipelineScene {
     if (!mobile) {
       const at = (x, y) => this.dOf(W * x, H * y)
       Object.assign(st, {
-        upload: at(0.23, 0.08),
-        ext: at(0.77, 0.19),
-        chunk: at(0.23, 0.32),
-        embed: at(0.63, 0.56),
-        index: at(0.77, 0.62),
-        retrieve: at(0.23, 0.73),
-        rerank: at(0.50, 0.785),
-        verify: at(0.77, 0.84),
-        answer: at(0.50, 0.91),
-        widget: at(0.50, 0.955),
+        upload: at(0.12, 0.075),
+        ext: at(0.88, 0.185),
+        chunk: at(0.12, 0.315),
+        embed: at(0.66, 0.555),
+        index: at(0.88, 0.605),
+        retrieve: at(0.12, 0.725),
+        rerank: at(0.50, 0.775),
+        verify: at(0.88, 0.825),
+        answer: at(0.50, 0.865),
+        widget: at(0.50, 0.905),
       })
       this.speed = this.len * 0.105
     }
@@ -282,11 +282,11 @@ export class PipelineScene {
         const p = i === 6 ? this.widgetPos() : this.pos(d)
         // Put the step markers in alternating side rails. The actual route
         // continues vertically between them, rather than reading left-to-right.
-        let bx = p.x < W * 0.5 ? W * 0.105 : W * 0.895
+        let bx = p.x < W * 0.5 ? W * 0.055 : W * 0.945
         let by = p.y
         if (i === 6) {
           bx = W * 0.86
-          by = Math.min(H - 48 * s, p.y - 12 * s)
+          by = Math.min(H - 42 * s, p.y - 4 * s)
         }
         return { x: p.x, y: p.y, bx, by }
       })
