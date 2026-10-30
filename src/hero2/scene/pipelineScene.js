@@ -104,22 +104,22 @@ export class PipelineScene {
     if (!mobile) {
       const s = clamp(Math.min(W / 1000, H / 700), 0.98, 1.35)
       const u = 1.05 * s
-      R = 210 * s
+      R = 142 * s
       const x0 = W * 0.015
       const len = W * 0.97
       this.s = s
       this.u = u
-      this.laneAmp = 66 * s
-      this.gateR = 26 * u
-      this.ramp = 64 * s
+      this.laneAmp = 38 * s
+      this.gateR = 21 * u
+      this.ramp = 42 * s
       this.abstainAmp = this.laneAmp
       const hdr = Math.max(this.laneAmp + this.gateR + 44 * s, 0.85 * R + 46 * s)
-      lineY = Math.max(H * 0.43, 92 + hdr)
+      lineY = Math.max(H * 0.51, 92 + hdr)
       this.hdr = hdr
       // The rail now breathes around the brain instead of reading as one
       // perfectly straight conveyor: a raised ingestion approach and a
       // lower response branch create a more spatial, hand-composed flow.
-      C = { x: x0 + len * 0.531, y: lineY - 0.07 * R }
+      C = { x: x0 + len * 0.515, y: lineY - 0.035 * R }
       const entryX = C.x - R * 0.99
       const exitX = C.x + R * 0.99
       wps = [
@@ -139,7 +139,7 @@ export class PipelineScene {
         upload: 36 * s, ext: D(0.155), chunk: D(0.285), embed: D(0.338),
         index: D(0.392), retrieve: D(0.7), rerank: D(0.765), verify: D(0.83), answer: D(0.905), widget: len,
       })
-      this.stubOff = -100 * s
+      this.stubOff = -76 * s
       this.speed = len * 0.068
       this.x0 = x0
     } else {
@@ -272,7 +272,9 @@ export class PipelineScene {
       let bx
       let by
       if (!this.mobile) {
-        by = Math.max(this.lineY + this.laneAmp + this.gateR + 24 * s, this.C.y + 0.96 * this.R + 25 * s)
+        const topY = Math.max(42 * s, this.C.y - this.R * 1.28)
+        const bottomY = Math.min(this.H - 54 * s, this.C.y + this.R * 1.28)
+        by = i % 2 === 0 ? topY : bottomY
         bx = p.x
       } else {
         by = i === 6 ? p.y + 64 * u : p.y
@@ -338,7 +340,7 @@ export class PipelineScene {
     outline()
     g.lineWidth = Math.max(2.2, R * 0.010)
     g.lineJoin = 'round'
-    g.strokeStyle = 'rgba(57,52,125,0.96)'
+    g.strokeStyle = 'rgba(39,39,43,0.94)'
     g.shadowColor = 'rgba(49,55,80,0.22)'
     g.shadowBlur = R * 0.045
     g.stroke()
@@ -350,7 +352,7 @@ export class PipelineScene {
     g.translate(-C.x, -C.y)
     outline()
     g.lineWidth = Math.max(0.8, R * 0.003)
-    g.strokeStyle = 'rgba(137,128,220,0.22)'
+    g.strokeStyle = 'rgba(90,90,96,0.22)'
     g.stroke()
     g.restore()
     this.brainImg = { cv, x: x0, y: y0, w, h }
@@ -543,7 +545,6 @@ export class PipelineScene {
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
     ctx.clearRect(0, 0, W, H)
     this.drawTrack(ctx)
-    if (!this.mobile) this.drawHeaders(ctx)
     this.drawGlow(ctx)
     this.drawBrain(ctx)
     this.drawLaserOutline(ctx)
@@ -933,10 +934,10 @@ export class PipelineScene {
           ctx.save()
           ctx.translate(-sheet * 2.2, -sheet * 1.7)
           ctx.globalAlpha = a * (0.16 + sheet * 0.06)
-          ctx.fillStyle = '#f4f2ff'
+          ctx.fillStyle = '#f2f2f3'
           drawRoundRect(ctx, -f.w / 2, -f.h / 2, f.w, f.h, 2.5)
           ctx.fill()
-          ctx.strokeStyle = 'rgba(83,76,165,0.42)'
+          ctx.strokeStyle = 'rgba(80,80,86,0.36)'
           ctx.lineWidth = 1
           ctx.stroke()
           ctx.restore()
@@ -1021,7 +1022,7 @@ export class PipelineScene {
         ctx.arc(x, y, 2.4, 0, TAU)
         ctx.fillStyle = i === 2 || i === 3 ? ACCENT : '#fff'
         ctx.fill()
-        ctx.strokeStyle = 'rgba(76,69,160,0.75)'
+        ctx.strokeStyle = 'rgba(70,70,76,0.68)'
         ctx.lineWidth = 0.9
         ctx.stroke()
       }
@@ -1274,9 +1275,14 @@ export class PipelineScene {
       ctx.fillStyle = '#000'
       ctx.fillText(String(i + 1), a.bx, a.by + 0.5)
       if (full) {
-        ctx.font = `500 ${this.titleFs}px ${SANS}`
-        ctx.fillStyle = 'rgba(0,0,0,0.68)'
+        ctx.font = `650 ${Math.max(10, 10.5 * s)}px ${SANS}`
+        ctx.fillStyle = 'rgba(20,20,23,0.88)'
         ctx.fillText(STEPS[i].title, a.bx, a.by + bs + 15 * s)
+        if (!this.mobile) {
+          ctx.font = `500 ${Math.max(7.5, 7.8 * s)}px ${SANS}`
+          ctx.fillStyle = 'rgba(90,90,96,0.72)'
+          ctx.fillText(stepNotes[i], a.bx, a.by + bs + 28 * s)
+        }
       }
     })
     // brain label (mobile)
