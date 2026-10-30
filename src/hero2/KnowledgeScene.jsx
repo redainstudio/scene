@@ -1,5 +1,5 @@
 import { motion } from 'motion/react'
-import { FileText, FileSpreadsheet, Image as ImageIcon, Search, ShieldCheck, Sparkles, ArrowUpRight } from 'lucide-react'
+import { FileText, FileSpreadsheet, ShieldCheck, ArrowUpRight } from 'lucide-react'
 
 const docs = [
   { name: 'Product handbook', meta: 'PDF · 2.4 MB', icon: FileText },
@@ -87,6 +87,7 @@ function AnswerCard() {
 export default function KnowledgeScene() {
   return (
     <motion.section
+      id="how-it-works"
       className="knowledge-scene"
       aria-label="How NeuralKinetics turns documents into source-backed answers"
       initial={{ opacity: 0, y: 18 }}
