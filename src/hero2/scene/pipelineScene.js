@@ -775,8 +775,8 @@ export class PipelineScene {
     const { u } = this
     const p = this.widgetPos()
     const k = u * (this.mobile ? 1 : Math.min(1, this.W / 1100))
-    const w = 86 * k
-    const h = 112 * k
+    const w = 98 * k
+    const h = 128 * k
     const x = p.x - w / 2
     const y = p.y - h / 2
     const font = Math.max(6.2, 7 * k)
@@ -811,9 +811,9 @@ export class PipelineScene {
     ctx.fillText('KNOWLEDGE AI', x + 19 * k, y + 10 * k)
 
     // Visitor prompt
-    const qx = x + w * 0.31
-    const qy = y + 27 * k
-    const qw = w * 0.6
+    const qx = x + w * 0.29
+    const qy = y + 29 * k
+    const qw = w * 0.63
     drawRoundRect(ctx, qx, qy, qw, 13 * k, 5 * k)
     ctx.fillStyle = 'rgba(35,39,62,0.92)'
     ctx.fill()
@@ -825,16 +825,16 @@ export class PipelineScene {
     ctx.stroke()
 
     // Source-backed answer
-    drawRoundRect(ctx, x + 8 * k, y + 46 * k, w - 16 * k, 30 * k, 5 * k)
+    drawRoundRect(ctx, x + 8 * k, y + 49 * k, w - 16 * k, 34 * k, 6 * k)
     ctx.fillStyle = 'rgba(98,88,245,0.055)'
     ctx.fill()
     ctx.font = `600 ${font}px ${SANS}`
     ctx.fillStyle = 'rgba(35,39,62,0.84)'
-    ctx.fillText('Found in your files', x + 13 * k, y + 54 * k)
+    ctx.fillText('Found in your files', x + 13 * k, y + 58 * k)
     ctx.strokeStyle = 'rgba(35,39,62,0.3)'
     ctx.lineWidth = 1.15 * k
     for (let i = 0; i < 2; i++) {
-      const yy = y + (62 + i * 6) * k
+      const yy = y + (67 + i * 6) * k
       ctx.beginPath()
       ctx.moveTo(x + 13 * k, yy)
       ctx.lineTo(x + (i === 0 ? 62 : 51) * k, yy)
@@ -844,7 +844,7 @@ export class PipelineScene {
     const newest = this.widgetMsgs[this.widgetMsgs.length - 1]
     const fresh = newest ? 1 - smooth(0, 1.3, this.t - newest.born) : 0
     const sx = x + 8 * k
-    const sy = y + 81 * k
+    const sy = y + 88 * k
     const sw = 56 * k
     drawRoundRect(ctx, sx, sy, sw, 14 * k, 7 * k)
     ctx.fillStyle = ACCENT_SOFT
@@ -857,7 +857,7 @@ export class PipelineScene {
     ctx.fillStyle = ACCENT
     ctx.fillText('SOURCES CITED', sx + 13 * k, sy + 7.2 * k)
 
-    drawRoundRect(ctx, x + 8 * k, y + 99 * k, w - 16 * k, 7 * k, 3.5 * k)
+    drawRoundRect(ctx, x + 8 * k, y + 108 * k, w - 16 * k, 9 * k, 4.5 * k)
     ctx.strokeStyle = 'rgba(35,39,62,0.2)'
     ctx.lineWidth = 1
     ctx.stroke()
@@ -908,7 +908,7 @@ export class PipelineScene {
     for (const f of list) {
       const pose = this.filePose(f)
       const appear = smooth(0, st.upload + 10, f.d) * smooth(0, 0.25, this.t - f.born + (f.born < 0.01 ? 1 : 0))
-      const sc = u * lerp(0.6, 1, smooth(0, st.upload, f.d)) * (f.spread ? lerp(0.7, 1, smooth(0, 0.35, this.t - f.born)) : 1)
+      const sc = 1.14 * u * lerp(0.6, 1, smooth(0, st.upload, f.d)) * (f.spread ? lerp(0.7, 1, smooth(0, 0.35, this.t - f.born)) : 1)
       const wipe = smooth(st.ext - band, st.ext + band, f.d)
       ctx.save()
       ctx.translate(pose.x, pose.y)
@@ -981,7 +981,7 @@ export class PipelineScene {
       ctx.save()
       ctx.translate(p.x, p.y)
       ctx.rotate(p.angle)
-      ctx.scale(u, u)
+      ctx.scale(1.12 * u, 1.12 * u)
       ctx.globalAlpha = 1 - vec
       drawChunkCard(ctx, 1, cw, ch)
       ctx.globalAlpha = vec
