@@ -600,3 +600,54 @@
   .knowledge-core__pulse,
   .knowledge-answer { animation: none !important; transition: none !important; }
 }
+
+
+/* Animated brain + pipeline scene */
+.knowledge-scene--animated {
+  min-height: 0;
+  padding: 25px 24px 18px;
+}
+.knowledge-canvas-wrap {
+  position: relative;
+  width: 100%;
+  height: clamp(390px, 36vw, 500px);
+  margin-top: 3px;
+}
+.hero2-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.knowledge-scene--animated .knowledge-scene__footer {
+  gap: 9px;
+}
+.knowledge-scene--animated .knowledge-scene__footer > span {
+  color: #77777d;
+  font-size: 7px;
+  letter-spacing: .09em;
+}
+.knowledge-scene--animated .knowledge-scene__footer > i {
+  width: 14px;
+}
+.knowledge-scene--animated .knowledge-scene__footer small {
+  gap: 5px;
+}
+@media (max-width: 1180px) {
+  .knowledge-scene--animated { padding-inline: 16px; }
+  .knowledge-canvas-wrap { height: 390px; }
+}
+@media (max-width: 900px) {
+  .knowledge-scene--animated { width: min(100%, 760px); }
+  .knowledge-canvas-wrap { height: 470px; }
+}
+@media (max-width: 600px) {
+  .knowledge-scene--animated { padding: 18px 12px 13px; }
+  .knowledge-canvas-wrap { height: 560px; }
+  .knowledge-scene--animated .knowledge-scene__footer { flex-wrap: wrap; gap: 6px; }
+  .knowledge-scene--animated .knowledge-scene__footer > span { font-size: 6px; }
+  .knowledge-scene--animated .knowledge-scene__footer > i { width: 8px; }
+  .knowledge-scene--animated .knowledge-scene__footer small { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .knowledge-scene--animated .hero2-canvas { animation: none; }
+}
