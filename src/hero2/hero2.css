@@ -742,3 +742,25 @@
 @media (prefers-reduced-motion: reduce) {
   .knowledge-scene--animated .hero2-canvas { animation: none; }
 }
+
+
+/* Vertical pipeline composition: the scene reads from the top edge to the bottom. */
+.knowledge-canvas-wrap {
+  height: clamp(600px, 46vw, 700px);
+  margin-top: 0;
+}
+.knowledge-scene__intro {
+  padding-inline: 4% 3%;
+}
+@media (min-width: 1600px) {
+  .knowledge-canvas-wrap { height: min(720px, calc(100svh - 170px)); }
+}
+@media (max-width: 1180px) {
+  .knowledge-canvas-wrap { height: 610px; }
+}
+@media (max-width: 900px) {
+  .knowledge-canvas-wrap { height: clamp(620px, 92vw, 760px); }
+}
+@media (max-width: 600px) {
+  .knowledge-canvas-wrap { height: 650px; }
+}
