@@ -651,3 +651,94 @@
 @media (prefers-reduced-motion: reduce) {
   .knowledge-scene--animated .hero2-canvas { animation: none; }
 }
+
+
+/* Full-bleed animated pipeline: intentionally no card, border, or panel. */
+.hero2-main {
+  width: min(1880px, 100%);
+  grid-template-columns: minmax(440px, .82fr) minmax(0, 1.18fr);
+  gap: clamp(26px, 3.1vw, 54px);
+  padding: clamp(28px, 4.8vh, 58px) clamp(28px, 4vw, 72px) clamp(34px, 5vh, 64px);
+}
+.knowledge-scene,
+.knowledge-scene--animated {
+  position: relative;
+  isolation: isolate;
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+  overflow: visible;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.knowledge-scene::before { display: none; }
+.knowledge-scene__intro {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  min-height: 24px;
+  padding: 0 2.5% 0 3%;
+  color: #8a8a90;
+  font-size: 8px;
+  font-weight: 750;
+  letter-spacing: .16em;
+}
+.knowledge-live {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: #85858a;
+  font-size: 7px;
+  letter-spacing: .12em;
+}
+.knowledge-live i {
+  width: 6px;
+  height: 6px;
+  background: #242428;
+  box-shadow: 0 0 0 3px rgba(20,20,22,.07);
+}
+.knowledge-canvas-wrap {
+  position: relative;
+  width: 100%;
+  height: clamp(570px, 43vw, 690px);
+  margin: 0;
+}
+.hero2-canvas { display: block; width: 100%; height: 100%; }
+@media (min-width: 1600px) {
+  .hero2-main {
+    grid-template-columns: minmax(520px, .82fr) minmax(0, 1.18fr);
+    gap: clamp(36px, 3.5vw, 66px);
+  }
+  .knowledge-canvas-wrap { height: clamp(620px, 39vw, 740px); }
+}
+@media (max-width: 1180px) {
+  .hero2-main {
+    grid-template-columns: minmax(390px, .82fr) minmax(0, 1.18fr);
+    gap: 24px;
+    padding-inline: 28px;
+  }
+  .knowledge-canvas-wrap { height: 560px; }
+}
+@media (max-width: 900px) {
+  .hero2-main {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 34px;
+    padding: 48px 32px 56px;
+  }
+  .knowledge-scene { width: 100%; justify-self: stretch; }
+  .knowledge-canvas-wrap { height: clamp(540px, 72vw, 660px); }
+}
+@media (max-width: 600px) {
+  .hero2-main { gap: 28px; padding: 36px 18px 44px; }
+  .knowledge-scene__intro { padding-inline: 2%; font-size: 7px; }
+  .knowledge-live { font-size: 6px; }
+  .knowledge-canvas-wrap { height: 560px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .knowledge-scene--animated .hero2-canvas { animation: none; }
+}
