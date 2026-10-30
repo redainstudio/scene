@@ -652,15 +652,42 @@ export class PipelineScene {
   }
 
   drawGlow(ctx) {
-    const { C, R } = this
+    const { C, R, u } = this
     const strength = Math.max(this.glow, this.brainPulse())
-    const e = 0.01 + 0.11 * strength
-    const g = ctx.createRadialGradient(C.x, C.y, R * 0.2, C.x, C.y, R * 1.45)
-    g.addColorStop(0, `rgba(98,88,245,${e * 0.36})`)
-    g.addColorStop(0.58, `rgba(98,88,245,${0.004 + strength * 0.025})`)
+    const e = 0.015 + 0.13 * strength
+    const g = ctx.createRadialGradient(C.x, C.y, R * 0.12, C.x, C.y, R * 1.62)
+    g.addColorStop(0, `rgba(98,88,245,${e * 0.52})`)
+    g.addColorStop(0.48, `rgba(98,88,245,${0.012 + strength * 0.04})`)
     g.addColorStop(1, 'rgba(98,88,245,0)')
     ctx.fillStyle = g
-    ctx.fillRect(C.x - R * 1.6, C.y - R * 1.5, R * 3.2, R * 3.1)
+    ctx.fillRect(C.x - R * 1.8, C.y - R * 1.7, R * 3.6, R * 3.4)
+
+    // Orbit guides frame the brain as a living knowledge core.
+    ctx.save()
+    ctx.translate(C.x, C.y)
+    ctx.rotate(-0.16)
+    for (let i = 0; i < 2; i++) {
+      ctx.beginPath()
+      ctx.ellipse(0, 0, R * (1.28 + i * 0.13), R * (0.83 + i * 0.1), 0, Math.PI * 0.08, Math.PI * 1.92)
+      ctx.setLineDash(i ? [2, 8] : [1, 6])
+      ctx.lineDashOffset = -this.t * (i ? 8 : 13)
+      ctx.strokeStyle = i
+        ? `rgba(98,88,245,${0.10 + strength * 0.09})`
+        : `rgba(98,88,245,${0.12 + strength * 0.12})`
+      ctx.lineWidth = i ? 1 : 1.2
+      ctx.stroke()
+    }
+    ctx.setLineDash([])
+    const angle = this.t * 0.34
+    const ox = Math.cos(angle) * R * 1.28
+    const oy = Math.sin(angle) * R * 0.83
+    ctx.beginPath()
+    ctx.arc(ox, oy, 3.2 * u, 0, TAU)
+    ctx.fillStyle = ACCENT
+    ctx.shadowColor = 'rgba(98,88,245,0.55)'
+    ctx.shadowBlur = 12 * u
+    ctx.fill()
+    ctx.restore()
   }
 
   drawLaserOutline(ctx) {
