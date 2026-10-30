@@ -1,13 +1,14 @@
 import { useEffect, useRef } from 'react'
 
 const VERTEX = `
+precision mediump float;
 attribute vec3 a_position;
 attribute float a_size;
 uniform float u_time;
 uniform vec2 u_pointer;
 uniform float u_aspect;
 uniform float u_pixel_ratio;
-varying float v_depth;
+varying mediump float v_depth;
 void main() {
   float t = u_time * 0.12;
   float cy = cos(t), sy = sin(t);
@@ -33,7 +34,7 @@ void main() {
 const DOT_FRAGMENT = `
 precision mediump float;
 uniform float u_time;
-varying float v_depth;
+varying mediump float v_depth;
 void main() {
   vec2 p = gl_PointCoord - 0.5;
   float d = length(p);
@@ -45,27 +46,41 @@ void main() {
 `
 const LINE_FRAGMENT = `
 precision mediump float;
-varying float v_depth;
+varying mediump float v_depth;
 void main() {
   gl_FragColor = vec4(vec3(0.28), 0.07 + (v_depth + 1.0) * 0.055);
 }
 `
 
 function makeShader(gl, type, source) {
-  const s = gl.createShader(type)
-  gl.shaderSource(s, source)
-  gl.compileShader(s)
-  if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) throw new Error(gl.getShaderInfoLog(s))
-  return s
+  const shader = gl.createShader(type)
+  gl.shaderSource(shader, source)
+  gl.compileShader(shader)
+  if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+    const message = gl.getShaderInfoLog(shader) || 'Unknown shader compilation error'
+    gl.deleteShader(shader)
+    throw new Error(message)
+  }
+  return shader
 }
+
 function makeProgram(gl, fragment) {
-  const p = gl.createProgram()
-  gl.attachShader(p, makeShader(gl, gl.VERTEX_SHADER, VERTEX))
-  gl.attachShader(p, makeShader(gl, gl.FRAGMENT_SHADER, fragment))
-  gl.linkProgram(p)
-  if (!gl.getProgramParameter(p, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(p))
-  return p
+  const program = gl.createProgram()
+  const vertex = makeShader(gl, gl.VERTEX_SHADER, VERTEX)
+  const pixel = makeShader(gl, gl.FRAGMENT_SHADER, fragment)
+  gl.attachShader(program, vertex)
+  gl.attachShader(program, pixel)
+  gl.linkProgram(program)
+  gl.deleteShader(vertex)
+  gl.deleteShader(pixel)
+  if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+    const message = gl.getProgramInfoLog(program) || 'Unknown shader link error'
+    gl.deleteProgram(program)
+    throw new Error(message)
+  }
+  return program
 }
+
 function geometry() {
   const count = 1500
   const dots = new Float32Array(count * 4)
@@ -80,33 +95,32 @@ function geometry() {
   }
   for (let i = 0; i < count; i++) {
     const p = pointAt(i)
-    dots.set([...p, i % 23 === 0 ? 4.4 : i % 5 === 0 ? 3.0 : 1.8], i * 4)
+    dots.set([...p, i % 23 === 0 ? 4.4 : i % 5 === 0 ? 3 : 1.8], i * 4)
     for (const step of [1, 11, 27]) {
       const j = i + step
       if (j >= count || (step !== 1 && i % 2)) continue
       edges.push(...p, ...pointAt(j))
     }
   }
-  // Orbital latitude and longitude scaffolding.
   for (let ring = 0; ring < 5; ring++) {
     const lat = -.72 + ring * .36
-    const rad = Math.sqrt(1 - lat * lat)
-    let prev = null
+    const radius = Math.sqrt(1 - lat * lat)
+    let previous = null
     for (let k = 0; k <= 180; k++) {
-      const a = k / 180 * Math.PI * 2
-      const p = [Math.cos(a) * rad, lat, Math.sin(a) * rad]
-      if (prev) edges.push(...prev, ...p)
-      prev = p
+      const angle = k / 180 * Math.PI * 2
+      const point = [Math.cos(angle) * radius, lat, Math.sin(angle) * radius]
+      if (previous) edges.push(...previous, ...point)
+      previous = point
     }
   }
   for (let meridian = 0; meridian < 8; meridian++) {
-    const lon = meridian / 8 * Math.PI
-    let prev = null
+    const longitude = meridian / 8 * Math.PI
+    let previous = null
     for (let k = 0; k <= 120; k++) {
-      const a = -Math.PI / 2 + k / 120 * Math.PI
-      const p = [Math.cos(a) * Math.cos(lon), Math.sin(a), Math.cos(a) * Math.sin(lon)]
-      if (prev) edges.push(...prev, ...p)
-      prev = p
+      const angle = -Math.PI / 2 + k / 120 * Math.PI
+      const point = [Math.cos(angle) * Math.cos(longitude), Math.sin(angle), Math.cos(angle) * Math.sin(longitude)]
+      if (previous) edges.push(...previous, ...point)
+      previous = point
     }
   }
   return { dots, edges: new Float32Array(edges) }
@@ -115,80 +129,151 @@ function geometry() {
 export default function KnowledgeWebGL() {
   const ref = useRef(null)
   const pointer = useRef([0, 0])
+
   useEffect(() => {
     const canvas = ref.current
-    const gl = canvas.getContext('webgl', { alpha: true, antialias: true, powerPreference: 'high-performance' })
-    if (!gl) return
-    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
-    let raf = 0, start = 0, width = 1, height = 1, dpr = 1
-    const data = geometry()
-    const dotProgram = makeProgram(gl, DOT_FRAGMENT)
-    const lineProgram = makeProgram(gl, LINE_FRAGMENT)
-    const buffer = (values) => {
-      const b = gl.createBuffer()
-      gl.bindBuffer(gl.ARRAY_BUFFER, b)
-      gl.bufferData(gl.ARRAY_BUFFER, values, gl.STATIC_DRAW)
-      return b
+    if (!canvas) return
+
+    let gl
+    let observer
+    let raf = 0
+    let dotBuffer
+    let lineBuffer
+    let dotProgram
+    let lineProgram
+    let onMove
+    let onLeave
+    let onContextLost
+    let onContextRestored
+    let disposed = false
+
+    const fallback = (error) => {
+      canvas.dataset.fallback = 'true'
+      canvas.setAttribute('aria-label', 'Knowledge network visualization')
+      canvas.style.background = 'radial-gradient(ellipse at 50% 50%, rgba(35,35,40,.13), transparent 56%), repeating-radial-gradient(ellipse at 50% 50%, transparent 0 36px, rgba(40,40,45,.055) 37px 38px, transparent 39px 62px)'
+      if (error) console.error('KnowledgeWebGL fallback:', error)
     }
-    const dotBuffer = buffer(data.dots)
-    const lineBuffer = buffer(data.edges)
-    const locations = (p) => ({
-      pos: gl.getAttribLocation(p, 'a_position'),
-      size: gl.getAttribLocation(p, 'a_size'),
-      time: gl.getUniformLocation(p, 'u_time'),
-      pointer: gl.getUniformLocation(p, 'u_pointer'),
-      aspect: gl.getUniformLocation(p, 'u_aspect'),
-      pixel: gl.getUniformLocation(p, 'u_pixel_ratio'),
-    })
-    const dl = locations(dotProgram), ll = locations(lineProgram)
-    const resize = () => {
-      const r = canvas.getBoundingClientRect()
-      width = Math.max(1, r.width); height = Math.max(1, r.height)
-      dpr = Math.min(window.devicePixelRatio || 1, 1.7)
-      canvas.width = width * dpr; canvas.height = height * dpr
-      gl.viewport(0, 0, canvas.width, canvas.height)
-    }
-    const observer = new ResizeObserver(resize)
-    observer.observe(canvas); resize()
-    const draw = (p, loc, b, count, mode, stride, sized, t) => {
-      gl.useProgram(p); gl.bindBuffer(gl.ARRAY_BUFFER, b)
-      gl.enableVertexAttribArray(loc.pos)
-      gl.vertexAttribPointer(loc.pos, 3, gl.FLOAT, false, stride, 0)
-      if (sized) {
-        gl.enableVertexAttribArray(loc.size)
-        gl.vertexAttribPointer(loc.size, 1, gl.FLOAT, false, stride, 12)
+
+    try {
+      gl = canvas.getContext('webgl', { alpha: true, antialias: true, powerPreference: 'high-performance' })
+      if (!gl) {
+        fallback()
+        return
       }
-      gl.uniform1f(loc.time, t)
-      gl.uniform2f(loc.pointer, pointer.current[0], pointer.current[1])
-      gl.uniform1f(loc.aspect, width / height)
-      gl.uniform1f(loc.pixel, dpr)
-      gl.drawArrays(mode, 0, count)
-    }
-    const render = (now) => {
+
+      const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+      const data = geometry()
+      dotProgram = makeProgram(gl, DOT_FRAGMENT)
+      lineProgram = makeProgram(gl, LINE_FRAGMENT)
+
+      const createBuffer = (values) => {
+        const buffer = gl.createBuffer()
+        gl.bindBuffer(gl.ARRAY_BUFFER, buffer)
+        gl.bufferData(gl.ARRAY_BUFFER, values, gl.STATIC_DRAW)
+        return buffer
+      }
+      dotBuffer = createBuffer(data.dots)
+      lineBuffer = createBuffer(data.edges)
+
+      const locations = (program) => ({
+        position: gl.getAttribLocation(program, 'a_position'),
+        size: gl.getAttribLocation(program, 'a_size'),
+        time: gl.getUniformLocation(program, 'u_time'),
+        pointer: gl.getUniformLocation(program, 'u_pointer'),
+        aspect: gl.getUniformLocation(program, 'u_aspect'),
+        pixel: gl.getUniformLocation(program, 'u_pixel_ratio'),
+      })
+      const dotLocations = locations(dotProgram)
+      const lineLocations = locations(lineProgram)
+
+      let width = 1
+      let height = 1
+      let dpr = 1
+      let start = 0
+
+      const resize = () => {
+        const rect = canvas.getBoundingClientRect()
+        width = Math.max(1, rect.width)
+        height = Math.max(1, rect.height)
+        dpr = Math.min(window.devicePixelRatio || 1, 1.7)
+        canvas.width = Math.round(width * dpr)
+        canvas.height = Math.round(height * dpr)
+        gl.viewport(0, 0, canvas.width, canvas.height)
+      }
+      observer = new ResizeObserver(resize)
+      observer.observe(canvas)
+      resize()
+
+      const draw = (program, locations, buffer, count, mode, stride, sized, time) => {
+        gl.useProgram(program)
+        gl.bindBuffer(gl.ARRAY_BUFFER, buffer)
+        if (locations.position >= 0) {
+          gl.enableVertexAttribArray(locations.position)
+          gl.vertexAttribPointer(locations.position, 3, gl.FLOAT, false, stride, 0)
+        }
+        if (sized && locations.size >= 0) {
+          gl.enableVertexAttribArray(locations.size)
+          gl.vertexAttribPointer(locations.size, 1, gl.FLOAT, false, stride, 12)
+        }
+        if (locations.time) gl.uniform1f(locations.time, time)
+        if (locations.pointer) gl.uniform2f(locations.pointer, pointer.current[0], pointer.current[1])
+        if (locations.aspect) gl.uniform1f(locations.aspect, width / height)
+        if (locations.pixel) gl.uniform1f(locations.pixel, dpr)
+        gl.drawArrays(mode, 0, count)
+      }
+
+      const render = (now) => {
+        if (disposed) return
+        start = start || now
+        const time = reduced ? .3 : (now - start) / 1000
+        gl.clearColor(1, 1, 1, 0)
+        gl.clear(gl.COLOR_BUFFER_BIT)
+        gl.enable(gl.BLEND)
+        gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
+        gl.disable(gl.DEPTH_TEST)
+        draw(lineProgram, lineLocations, lineBuffer, data.edges.length / 3, gl.LINES, 12, false, time)
+        draw(dotProgram, dotLocations, dotBuffer, data.dots.length / 4, gl.POINTS, 16, true, time)
+        if (!reduced) raf = requestAnimationFrame(render)
+      }
+
+      onMove = (event) => {
+        const rect = canvas.getBoundingClientRect()
+        pointer.current = [((event.clientX - rect.left) / rect.width - .5) * 2, (.5 - (event.clientY - rect.top) / rect.height) * 2]
+      }
+      onLeave = () => { pointer.current = [0, 0] }
+      onContextLost = (event) => {
+        event.preventDefault()
+        cancelAnimationFrame(raf)
+        fallback(new Error('WebGL context lost'))
+      }
+      onContextRestored = () => window.location.reload()
+
+      canvas.addEventListener('pointermove', onMove)
+      canvas.addEventListener('pointerleave', onLeave)
+      canvas.addEventListener('webglcontextlost', onContextLost)
+      canvas.addEventListener('webglcontextrestored', onContextRestored)
       raf = requestAnimationFrame(render)
-      start = start || now
-      const t = reduced ? .3 : (now - start) / 1000
-      gl.clearColor(1, 1, 1, 0); gl.clear(gl.COLOR_BUFFER_BIT)
-      gl.enable(gl.BLEND); gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA)
-      gl.disable(gl.DEPTH_TEST)
-      draw(lineProgram, ll, lineBuffer, data.edges.length / 3, gl.LINES, 12, false, t)
-      draw(dotProgram, dl, dotBuffer, data.dots.length / 4, gl.POINTS, 16, true, t)
-      if (reduced) cancelAnimationFrame(raf)
-    }
-    const move = (e) => {
-      const r = canvas.getBoundingClientRect()
-      pointer.current = [((e.clientX - r.left) / r.width - .5) * 2, (.5 - (e.clientY - r.top) / r.height) * 2]
-    }
-    const leave = () => { pointer.current = [0, 0] }
-    canvas.addEventListener('pointermove', move)
-    canvas.addEventListener('pointerleave', leave)
-    raf = requestAnimationFrame(render)
-    return () => {
-      cancelAnimationFrame(raf); observer.disconnect()
-      canvas.removeEventListener('pointermove', move); canvas.removeEventListener('pointerleave', leave)
-      gl.deleteBuffer(dotBuffer); gl.deleteBuffer(lineBuffer)
-      gl.deleteProgram(dotProgram); gl.deleteProgram(lineProgram)
+
+      return () => {
+        disposed = true
+        cancelAnimationFrame(raf)
+        observer?.disconnect()
+        canvas.removeEventListener('pointermove', onMove)
+        canvas.removeEventListener('pointerleave', onLeave)
+        canvas.removeEventListener('webglcontextlost', onContextLost)
+        canvas.removeEventListener('webglcontextrestored', onContextRestored)
+        if (dotBuffer) gl.deleteBuffer(dotBuffer)
+        if (lineBuffer) gl.deleteBuffer(lineBuffer)
+        if (dotProgram) gl.deleteProgram(dotProgram)
+        if (lineProgram) gl.deleteProgram(lineProgram)
+      }
+    } catch (error) {
+      cancelAnimationFrame(raf)
+      observer?.disconnect()
+      fallback(error)
+      return () => { disposed = true }
     }
   }, [])
+
   return <canvas ref={ref} className="knowledge-webgl" aria-label="Interactive three-dimensional knowledge network" role="img" />
 }
