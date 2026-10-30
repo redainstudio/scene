@@ -1,6 +1,7 @@
 import { motion } from 'motion/react'
 import { Plus } from 'lucide-react'
 import NeuralCanvas from './NeuralCanvas.jsx'
+import './index.css'
 
 const EASE = [0.16, 1, 0.3, 1]
 
@@ -60,17 +61,17 @@ export default function App() {
           </button>
 
           <div className="pill pill--tags">
-            <span className="pill__text">Advanced Bionics</span>
-            <span className="pill__text">Cognitive AI</span>
+            <span className="pill__text">Knowledge AI</span>
+            <span className="pill__text">Source-backed</span>
           </div>
         </div>
 
         <div className="nav__right">
           <div className="pill pill--right">
-            <button type="button" className="icon-btn" aria-label="Adaptive Systems">
+            <button type="button" className="icon-btn" aria-label="Private knowledge">
               <GridIcon />
             </button>
-            <span className="pill__text pill__text--right">Adaptive Systems</span>
+            <span className="pill__text pill__text--right">Private knowledge</span>
           </div>
         </div>
       </motion.nav>
@@ -93,7 +94,7 @@ export default function App() {
             transition={{ delay: 0.6, duration: 0.8, ease: EASE }}
           >
             <span className="subtitle__dot" />
-            <span className="subtitle__text">Best digital banking card 2026</span>
+            <span className="subtitle__text">YOUR KNOWLEDGE, IN MOTION</span>
           </motion.div>
 
           <motion.h1
@@ -102,26 +103,35 @@ export default function App() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.8, duration: 0.8, ease: EASE }}
           >
-            One Card, Zero
+            Answers grounded in
             <br />
-            Limits. Worldwide.
+            your knowledge.
           </motion.h1>
+
+          <motion.p
+            className="hero-copy"
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.9, duration: 0.8, ease: EASE }}
+          >
+            Turn your documents into an AI assistant that shows the source behind every answer.
+          </motion.p>
 
           <motion.div
             className="buttons"
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 1.0, duration: 0.8, ease: EASE }}
+            transition={{ delay: 1.1, duration: 0.8, ease: EASE }}
           >
-            <button type="button" className="btn btn--solid">See Features</button>
-            <button type="button" className="btn btn--outline">How It Works</button>
+            <button type="button" className="btn btn--solid">See how it works</button>
+            <button type="button" className="btn btn--outline">Explore the platform</button>
           </motion.div>
         </div>
 
         <div className="footer__right">
-          <span className="tag">Neuromorphic</span>
-          <span className="tag">AGI</span>
-          <span className="tag">Cybernetics</span>
+          <span className="tag">Source citations</span>
+          <span className="tag">Hybrid search</span>
+          <span className="tag">Easy to embed</span>
         </div>
       </motion.footer>
     </div>

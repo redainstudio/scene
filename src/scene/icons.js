@@ -3,17 +3,11 @@
 
 export const DOC_W = 38
 export const DOC_H = 48
-export const FOLDER_W = 46
-export const FOLDER_H = 36
 
-export const FILE_TYPES = ['folder', 'pdf', 'xlsx', 'txt', 'docx', 'doc', 'img']
+export const FILE_TYPES = ['pdf', 'xlsx', 'txt', 'docx', 'doc', 'img']
 
 export function boxOf(type) {
-  return type === 'folder' ? { w: FOLDER_W, h: FOLDER_H } : { w: DOC_W, h: DOC_H }
-}
-
-export function gridOf(type) {
-  return type === 'folder' ? { cols: 5, rows: 4 } : { cols: 4, rows: 6 }
+  return { w: DOC_W, h: DOC_H }
 }
 
 const SANS = '"Inter", system-ui, -apple-system, "Segoe UI", sans-serif'
@@ -151,37 +145,8 @@ function drawDoc(ctx, type, a) {
   }
 }
 
-function drawFolder(ctx, a) {
-  const x0 = -FOLDER_W / 2
-  const x1 = FOLDER_W / 2
-  const yTop = -FOLDER_H / 2
-  const yBody = yTop + 6
-  const yBot = FOLDER_H / 2
-  ctx.beginPath()
-  ctx.moveTo(x0, yBot)
-  ctx.lineTo(x0, yTop + 2)
-  ctx.lineTo(x0 + 2, yTop)
-  ctx.lineTo(x0 + 14, yTop)
-  ctx.lineTo(x0 + 18, yBody)
-  ctx.lineTo(x1 - 2, yBody)
-  ctx.lineTo(x1, yBody + 2)
-  ctx.lineTo(x1, yBot - 2)
-  ctx.lineTo(x1 - 2, yBot)
-  ctx.closePath()
-  ctx.fillStyle = `rgba(255,255,255,${a})`
-  ctx.fill()
-  ctx.lineWidth = 1.2
-  ctx.lineJoin = 'round'
-  ctx.strokeStyle = `rgba(0,0,0,${a})`
-  ctx.stroke()
-  line(ctx, x0 + 1, yBody + 6, x1 - 1, yBody + 6, 0.45 * a, 1)
-  line(ctx, x0 + 7, yBody + 13, x0 + 22, yBody + 13, 0.32 * a)
-  line(ctx, x0 + 7, yBody + 18, x0 + 17, yBody + 18, 0.32 * a)
-}
-
 export function drawFile(ctx, type, a = 1) {
-  if (type === 'folder') drawFolder(ctx, a)
-  else drawDoc(ctx, type, a)
+  drawDoc(ctx, type, a)
 }
 
 

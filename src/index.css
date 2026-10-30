@@ -206,6 +206,8 @@ a {
 .subtitle__text {
   font-size: 13px;
   color: rgba(0, 0, 0, 0.55);
+  font-weight: 600;
+  letter-spacing: 0.08em;
 }
 
 .heading {
@@ -214,6 +216,14 @@ a {
   letter-spacing: -0.03em;
   line-height: 1;
   color: #000;
+}
+
+.hero-copy {
+  max-width: 520px;
+  margin-top: 14px;
+  font-size: 15px;
+  line-height: 1.55;
+  color: rgba(0, 0, 0, 0.58);
 }
 
 .buttons {
@@ -333,6 +343,10 @@ a {
 
   .heading {
     font-size: clamp(2.5rem, 5.5vw, 4.5rem);
+  }
+
+  .hero-copy {
+    font-size: 16px;
   }
 
   .footer__right {

@@ -2,6 +2,9 @@ import { OUTLINE, getFolds, buildNeurons, mulberry32 } from './brain.js'
 import { FILE_TYPES, boxOf, drawFile, drawTextPage, drawChunkCard, drawRoundRect } from './icons.js'
 
 const TAU = Math.PI * 2
+const ACCENT = '#6258F5'
+const ACCENT_SOFT = '#F0EEFF'
+const INDEX_INK = '#424753'
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v))
 const lerp = (a, b, t) => a + (b - a) * t
 const smooth = (a, b, x) => {
@@ -14,16 +17,13 @@ const MONO = 'ui-monospace, "SF Mono", Menlo, Consolas, monospace'
 const SANS = '"Inter", system-ui, -apple-system, "Segoe UI", sans-serif'
 
 export const STEPS = [
-  { title: 'Upload', text: 'Add PDFs, Word, Excel, images and plain text from your dashboard. Whole folders work too.' },
-  { title: 'Extract', text: 'Each file takes the right route: layout parsing for documents, OCR for scans and images, row by row for spreadsheets.' },
-  { title: 'Chunk', text: 'Text is split by headings and tables into small passages that keep their page and section.' },
-  { title: 'Embed', text: 'Every passage becomes a dense vector plus keyword (BM25) signals, processed in large batches.' },
-  { title: 'Index', text: 'Vectors are stored in Qdrant, isolated per organization and bot. This is your bot\u2019s knowledge.' },
-  { title: 'Retrieve', text: 'A visitor\u2019s question runs hybrid search: meaning and exact keywords together.' },
-  { title: 'Rerank', text: 'A reranker narrows the candidates down to the 5\u201310 passages that really answer it.' },
-  { title: 'Verify', text: 'Not enough evidence? The bot says it doesn\u2019t know instead of guessing.' },
-  { title: 'Answer', text: 'The LLM answers only from that evidence, streamed with source citations.' },
-  { title: 'Deploy', text: 'One npm SDK or a single script tag puts the bot on your website.' },
+  { title: 'Upload' },
+  { title: 'Extract' },
+  { title: 'Chunk' },
+  { title: 'Index' },
+  { title: 'Retrieve' },
+  { title: 'Verify' },
+  { title: 'Answer' },
 ]
 
 const NEURONS = buildNeurons()
@@ -81,17 +81,13 @@ export class PipelineScene {
     this.timers = []
     this.widgetMsgs = []
     this.energy = new Array(NEURONS.nodes.length).fill(0)
-    this.flash = new Array(10).fill(-9)
     this.spawnIn = 0.2
-    this.qIn = 5.2
+    this.qIn = 1.15
     this.ambientIn = 1
     this.glow = 0
+    this.hasIndexedContent = false
     this.lastEntryPulse = -1
     this.bag = []
-    this.hover = -1
-    this.pinned = -1
-    this.pinUntil = 0
-    this.active = 0
   }
 
   /* ----------------------------------------------------------- layout */
@@ -108,7 +104,7 @@ export class PipelineScene {
     if (!mobile) {
       const s = clamp(Math.min(W / 1440, H / 880), 0.62, 1.45)
       const u = 1.05 * s
-      R = 148 * s
+      R = 184 * s
       const x0 = W * 0.04
       const len = W * 0.92
       this.s = s
@@ -117,7 +113,6 @@ export class PipelineScene {
       this.gateR = 26 * u
       this.ramp = 64 * s
       this.abstainAmp = this.laneAmp
-      this.laneOffs = { layout: 0, rows: -this.laneAmp, ocr: this.laneAmp }
       const hdr = Math.max(this.laneAmp + this.gateR + 44 * s, 0.85 * R + 46 * s)
       lineY = Math.max(H * 0.37, 92 + hdr)
       this.hdr = hdr
@@ -125,7 +120,7 @@ export class PipelineScene {
       cornerR = 0
       const D = (f) => f * len
       Object.assign(st, {
-        upload: 36 * s, split: D(0.075), ext: D(0.155), merge: D(0.24), chunk: D(0.285), embed: D(0.338),
+        upload: 36 * s, ext: D(0.155), chunk: D(0.285), embed: D(0.338),
         index: D(0.392), retrieve: D(0.7), rerank: D(0.765), verify: D(0.83), answer: D(0.905), widget: len,
       })
       C = { x: x0 + D(0.531), y: lineY - 0.07 * R }
@@ -137,7 +132,7 @@ export class PipelineScene {
       const u = clamp((0.55 * W) / 390, 0.5, 0.95)
       this.s = m
       this.u = u
-      R = clamp(W * 0.2, 50, 100)
+      R = clamp(W * 0.23, 56, 112)
       const xL = W * 0.2
       const xR = W * 0.84
       const bottomLimit = H - 350
@@ -154,7 +149,6 @@ export class PipelineScene {
       this.gateR = 26 * u
       this.ramp = 0.12 * L1
       this.abstainAmp = 34 * m
-      this.laneOffs = { layout: 0, rows: -this.laneAmp, ocr: -2 * this.laneAmp }
       C = { x: W * 0.55, y: yb - 0.07 * R }
       this.stubOff = 40 * m
       this.speed = L1 * 0.3
@@ -165,8 +159,7 @@ export class PipelineScene {
       this.xL = xL
       this.xR = xR
       this.mobL1 = L1
-      this.mobLr = Lr
-      st._left = { upload: 0.07, split: 0.2, ext: 0.37, merge: 0.55, chunk: 0.68, embed: 0.79, index: 0.9 }
+      st._left = { upload: 0.07, ext: 0.37, chunk: 0.68, embed: 0.79, index: 0.9 }
       st._right = { retrieve: 0.15, rerank: 0.32, verify: 0.48, answer: 0.64, widget: 0.86 }
     }
 
@@ -196,7 +189,8 @@ export class PipelineScene {
     st.brainIn = this.dOf(tips.l, lineY)
     st.brainOut = this.dOf(tips.r, lineY)
 
-    this.stationD = [st.upload, st.ext, st.chunk, st.embed, st.index, st.retrieve, st.rerank, st.verify, st.answer, st.widget]
+    // The final Answer marker belongs to the deployed Knowledge AI chat.
+    this.stationD = [st.upload, st.ext, st.chunk, st.index, st.retrieve, st.verify, st.widget]
     this.buildAnchors()
     this.prerenderBrain()
   }
@@ -252,13 +246,6 @@ export class PipelineScene {
     return { x: p.x + p.nx * off, y: p.y + p.ny * off, tx: p.tx, ty: p.ty, nx: p.nx, ny: p.ny }
   }
 
-  laneOff(lane, d) {
-    if (lane === 'layout') return 0
-    const { split, merge } = this.st
-    const amp = this.laneOffs[lane]
-    return amp * smooth(split, split + this.ramp, d) * (1 - smooth(merge - this.ramp, merge, d))
-  }
-
   abstainOff(d) {
     return this.abstainAmp * smooth(this.st.verify, this.st.verify + this.ramp, d)
   }
@@ -266,24 +253,24 @@ export class PipelineScene {
   buildAnchors() {
     const { s, u } = this
     this.anchors = this.stationD.map((d, i) => {
-      const p = this.pos(d)
+      const p = i === 6 ? this.widgetPos() : this.pos(d)
       let bx
       let by
       if (!this.mobile) {
         by = this.lineY + this.laneAmp + this.gateR + 24 * s
         bx = p.x
       } else {
-        by = p.y
-        bx = i < 5 ? this.xL - 17 * s : this.xR - (i === 9 ? 36 : 17) * s
+        by = i === 6 ? p.y + 64 * u : p.y
+        bx = i === 6 ? p.x : i < 4 ? this.xL - 17 * s : this.xR - 17 * s
       }
       return { x: p.x, y: p.y, bx, by }
     })
     this.labelMode = 'full'
     if (!this.mobile) {
       let minPitch = Infinity
-      const ds = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+      const ds = this.anchors.map((_, i) => i)
       for (let k = 1; k < ds.length; k++) {
-        if (k === 5) continue
+        if (k === 4) continue
         minPitch = Math.min(minPitch, this.anchors[k].x - this.anchors[k - 1].x)
       }
       this.labelMode = minPitch < 44 ? 'num' : 'full'
@@ -313,8 +300,8 @@ export class PipelineScene {
     g.fill()
     g.save()
     g.clip()
-    g.strokeStyle = 'rgba(0,0,0,0.5)'
-    g.lineWidth = Math.max(0.8, R * 0.0055)
+    g.strokeStyle = 'rgba(49,55,80,0.32)'
+    g.lineWidth = Math.max(0.7, R * 0.0042)
     g.lineCap = 'round'
     g.lineJoin = 'round'
     for (const c of getFolds(this.mobile ? 1 : 0)) {
@@ -331,45 +318,6 @@ export class PipelineScene {
     this.brainImg = { cv, x: x0, y: y0, w, h }
   }
 
-  /* -------------------------------------------------------- interaction */
-
-  pointer(x, y) {
-    if (x == null) {
-      this.hover = -1
-      return -1
-    }
-    let best = -1
-    let bd = Infinity
-    this.anchors.forEach((a, i) => {
-      if (!this.mobile) {
-        const top = this.lineY - this.hdr
-        const bot = a.by + 34 * this.s
-        if (y < top || y > bot) return
-        const dx = Math.abs(x - a.x)
-        if (dx < Math.max(28 * this.s, 30) && dx < bd) {
-          bd = dx
-          best = i
-        }
-      } else {
-        const d = Math.hypot(x - a.x, y - a.y)
-        const d2 = Math.hypot(x - a.bx, y - a.by)
-        const m = Math.min(d, d2)
-        if (m < 30 && m < bd) {
-          bd = m
-          best = i
-        }
-      }
-    })
-    this.hover = best
-    return best
-  }
-
-  pin(i) {
-    if (i < 0) return
-    this.pinned = i
-    this.pinUntil = this.t + 6
-  }
-
   /* ------------------------------------------------------------- sim */
 
   nextType() {
@@ -383,27 +331,13 @@ export class PipelineScene {
     return this.bag.pop()
   }
 
-  laneFor(type) {
-    if (type === 'xlsx') return 'rows'
-    if (type === 'img') return 'ocr'
-    if (type === 'pdf' && this.rnd() < 0.2) return 'ocr'
-    return 'layout'
-  }
-
   makeFile(type, d, extra = {}) {
     const { w, h } = boxOf(type)
-    return { type, w, h, d, lane: this.laneFor(type), ph: this.rnd() * TAU, born: this.t, spread: 0, ...extra }
+    return { type, w, h, d, ph: this.rnd() * TAU, born: this.t, spread: 0, ...extra }
   }
 
   bitOf(seed, k = 0) {
     return ((Math.floor(this.t * 5 + seed * 40) + k) & 1) === 0 ? '0' : '1'
-  }
-
-  crossFlash(a, b) {
-    for (let i = 0; i < this.stationD.length; i++) {
-      const d = this.stationD[i]
-      if (a < d && b >= d) this.flash[i] = this.t
-    }
   }
 
   light(node, e) {
@@ -416,7 +350,8 @@ export class PipelineScene {
 
   toBrain(count, seedBase) {
     const e = this.tipL
-    this.glow = Math.min(1, this.glow + 0.03)
+    this.hasIndexedContent = true
+    this.glow = Math.min(1, this.glow + 0.34)
     if (this.t - this.lastEntryPulse > 0.2) {
       this.pulses.push({ x: e.x, y: e.y, t0: this.t, kind: 'entry' })
       this.lastEntryPulse = this.t
@@ -443,14 +378,14 @@ export class PipelineScene {
       const n = pool[Math.floor(this.rnd() * pool.length)]
       if (!picked.includes(n)) picked.push(n)
     }
-    const form = [[30, -15], [30, 0], [30, 15], [49, -7.5], [49, 7.5]]
+    const form = [[30, -18], [30, 0], [30, 18], [52, -9], [52, 9]]
     const chips = picked.map((node, k) => {
       this.timers.push({ at: this.t + 0.05 + k * 0.06, node, e: 1 })
-      return { node, start: this.t + 0.3 + k * 0.09, dur: 0.95, rel: form[k], attached: false, keep: k === 1 || k === 4, a: 1 }
+      return { node, start: this.t + 0.1 + k * 0.05, dur: 0.58, rel: form[k], attached: false, keep: k === 1 || k === 4, a: 1 }
     })
     this.packets.push({
       t0: this.t, state: 'drop', d: this.st.retrieve, drop: 0, abstain: this.rnd() < 0.24, chips,
-      hold: 0, doneRerank: false, doneVerify: false, fade: 0, ph: this.rnd() * TAU, verdict: 0,
+      doneVerify: false, verdict: 0,
     })
   }
 
@@ -461,11 +396,6 @@ export class PipelineScene {
     const { st, s } = this
     const v = this.speed
 
-    // active step: hover > pinned > auto narration
-    if (this.hover >= 0) this.active = this.hover
-    else if (this.t < this.pinUntil) this.active = this.pinned
-    else this.active = Math.floor(this.t / 2.8) % 10
-
     // spawn files
     this.spawnIn -= dt
     if (this.spawnIn <= 0 && this.files.length < 9) {
@@ -473,33 +403,22 @@ export class PipelineScene {
       this.spawnIn = (this.mobile ? 1.9 : 1.55) + this.rnd() * 0.7
     }
     // spawn questions
-    this.qIn -= dt
-    if (this.qIn <= 0 && this.packets.length < 2) {
-      this.spawnPacket()
-      this.qIn = (this.mobile ? 5.2 : 4.4) + this.rnd() * 1.4
+    if (this.hasIndexedContent) {
+      this.qIn -= dt
+      if (this.qIn <= 0 && this.packets.length < 2) {
+        this.spawnPacket()
+        this.qIn = (this.mobile ? 4.6 : 4.1) + this.rnd() * 1.1
+      }
     }
 
     // files
     for (let i = this.files.length - 1; i >= 0; i--) {
       const f = this.files[i]
-      const prev = f.d
       const near = 1 - 0.3 * Math.exp(-(((f.d - st.ext) / (60 * s)) ** 2))
       f.d += v * near * dt
-      this.crossFlash(prev, f.d)
-      if (f.type === 'folder' && f.d >= st.upload + 40 * s) {
-        const kids = []
-        for (let k = 0; k < 3; k++) {
-          let ty
-          do ty = this.nextType()
-          while (ty === 'folder')
-          kids.push(this.makeFile(ty, f.d - k * 13 * s, { spread: (k - 1) * 24 * this.u, born: this.t }))
-        }
-        this.files.splice(i, 1, ...kids)
-        continue
-      }
       if (f.d >= st.chunk) {
         for (let k = 0; k < 3; k++) {
-          this.chunks.push({ d: f.d - k * 15 * s, idx: k, born: this.t, seed: this.rnd(), ph: this.rnd() * TAU })
+          this.chunks.push({ d: f.d, idx: k, born: this.t, seed: this.rnd(), ph: this.rnd() * TAU })
         }
         this.files.splice(i, 1)
       }
@@ -508,9 +427,7 @@ export class PipelineScene {
     // chunks -> vectors -> brain
     for (let i = this.chunks.length - 1; i >= 0; i--) {
       const c = this.chunks[i]
-      const prev = c.d
       c.d += v * dt
-      this.crossFlash(prev, c.d)
       if (c.d >= st.brainIn - 3) {
         this.toBrain(2, c.seed)
         this.chunks.splice(i, 1)
@@ -527,7 +444,7 @@ export class PipelineScene {
         const n = this.nodesPx[p.node]
         this.pulses.push({ x: n[0], y: n[1], t0: this.t, kind: 'node' })
         this.memories.push({ x: n[0] + (this.rnd() - 0.5) * 18 * this.u, y: n[1] + (this.rnd() - 0.5) * 18 * this.u, ch: p.ch, born: this.t })
-        if (this.memories.length > 64) this.memories.shift()
+        if (this.memories.length > 26) this.memories.shift()
       }
     }
 
@@ -535,48 +452,31 @@ export class PipelineScene {
     for (let i = this.packets.length - 1; i >= 0; i--) {
       const pk = this.packets[i]
       const age = this.t - pk.t0
-      const pv = v * 0.85
+      const pv = v * 1.12
       if (pk.state === 'drop') {
         pk.drop = clamp(age / 0.8, 0, 1)
-        if (age > 1.5 + 0.5) pk.state = 'travel'
-        else if (age > 1.45 && pk.chips.every((c) => c.attached)) pk.state = 'travel'
+        if (age > 1.2) pk.state = 'travel'
+        else if (age > 0.9 && pk.chips.every((c) => c.attached)) pk.state = 'travel'
       } else if (pk.state === 'travel') {
         const prev = pk.d
-        pk.d += pv * dt
-        this.crossFlash(prev, pk.d)
-        if (!pk.doneRerank && pk.d >= st.rerank) {
-          pk.d = st.rerank
-          pk.state = 'rerank'
-          pk.hold = 0
-        } else if (!pk.doneVerify && pk.d >= st.verify) {
-          pk.d = st.verify
-          pk.state = 'verify'
-          pk.hold = 0
-        } else if (!pk.abstain && pk.d >= st.widget - 38 * s) {
+        const target = pk.abstain ? st.answer : st.widget - 38 * s
+        pk.d = Math.min(target, pk.d + pv * dt)
+        if (!pk.doneVerify && prev < st.verify && pk.d >= st.verify) pk.doneVerify = true
+        pk.verdict = smooth(st.verify - 10 * s, st.verify + 14 * s, pk.d) *
+          (1 - smooth(st.verify + 30 * s, st.verify + 46 * s, pk.d))
+        if (pk.abstain && pk.d >= target) {
+          pk.state = 'abstained'
+          pk.endedAt = this.t
+          const end = this.pos(st.answer, this.abstainAmp)
+          this.pulses.push({ x: end.x, y: end.y, t0: this.t, kind: 'abstain' })
+        } else if (!pk.abstain && pk.d >= target) {
           this.widgetMsgs.push({ born: this.t })
           if (this.widgetMsgs.length > 3) this.widgetMsgs.shift()
-          this.pulses.push({ ...this.pos(st.widget), t0: this.t, kind: 'widget' })
+          this.pulses.push({ ...this.widgetPos(), t0: this.t, kind: 'widget' })
           this.packets.splice(i, 1)
-        } else if (pk.abstain && pk.d >= st.answer) {
-          pk.d = st.answer
-          pk.state = 'fade'
         }
-      } else if (pk.state === 'rerank') {
-        pk.hold += dt
-        if (pk.hold > 0.95) {
-          pk.doneRerank = true
-          pk.state = 'travel'
-        }
-      } else if (pk.state === 'verify') {
-        pk.hold += dt
-        pk.verdict = smooth(0.15, 0.4, pk.hold)
-        if (pk.hold > 0.9) {
-          pk.doneVerify = true
-          pk.state = 'travel'
-        }
-      } else if (pk.state === 'fade') {
-        pk.fade += dt / 1.5
-        if (pk.fade >= 1) this.packets.splice(i, 1)
+      } else if (pk.state === 'abstained' && this.t - pk.endedAt > 0.42) {
+        this.packets.splice(i, 1)
       }
     }
 
@@ -595,7 +495,7 @@ export class PipelineScene {
       this.ambientIn = 0.8 + this.rnd() * 1.2
     }
     this.pulses = this.pulses.filter((p) => this.t - p.t0 < 1.2)
-    this.glow = Math.max(0, this.glow - dt * 0.4)
+    this.glow = Math.max(0, this.glow - dt * 0.65)
   }
 
   /* ------------------------------------------------------------ draw */
@@ -608,17 +508,15 @@ export class PipelineScene {
     if (!this.mobile) this.drawHeaders(ctx)
     this.drawGlow(ctx)
     this.drawBrain(ctx)
-    this.drawGates(ctx, 'back')
+    this.drawLaserOutline(ctx)
     this.drawWidget(ctx)
     this.drawAbstainNode(ctx)
     this.drawFiles(ctx)
     this.drawChunks(ctx)
     this.drawPackets(ctx)
     this.drawInbrain(ctx)
-    this.drawGates(ctx, 'front')
     this.drawPulses(ctx)
     this.drawLabels(ctx)
-    this.drawCaption(ctx)
   }
 
   strokeAlong(ctx, d0, d1, offFn, base, dash) {
@@ -632,11 +530,11 @@ export class PipelineScene {
     ctx.lineWidth = 1.3
     if (!dash) {
       ctx.setLineDash([])
-      ctx.strokeStyle = `rgba(0,0,0,${base})`
+      ctx.strokeStyle = `rgba(49,55,80,${base})`
     } else {
       ctx.setLineDash([3, 9])
       ctx.lineDashOffset = -this.t * 16
-      ctx.strokeStyle = `rgba(0,0,0,${base})`
+      ctx.strokeStyle = `rgba(98,88,245,${base * 0.55})`
     }
     ctx.stroke()
     ctx.setLineDash([])
@@ -646,13 +544,11 @@ export class PipelineScene {
     const { st } = this
     const lines = [
       [0, this.len, () => 0],
-      [st.split - 6, st.merge + 6, (d) => this.laneOff('rows', d)],
-      [st.split - 6, st.merge + 6, (d) => this.laneOff('ocr', d)],
       [st.verify - 6, st.answer, (d) => this.abstainOff(d)],
     ]
     for (const [a, b, f] of lines) {
-      this.strokeAlong(ctx, a, b, f, 0.16, false)
-      this.strokeAlong(ctx, a, b, f, 0.6, true)
+      this.strokeAlong(ctx, a, b, f, 0.12, false)
+      this.strokeAlong(ctx, a, b, f, 0.55, true)
     }
     // visitor-question stub
     const top = this.pos(st.retrieve, this.stubOff)
@@ -661,13 +557,13 @@ export class PipelineScene {
     ctx.moveTo(top.x, top.y)
     ctx.lineTo(bot.x, bot.y)
     ctx.setLineDash([2, 5])
-    ctx.strokeStyle = 'rgba(0,0,0,0.35)'
+    ctx.strokeStyle = 'rgba(98,88,245,0.3)'
     ctx.lineWidth = 1.1
     ctx.stroke()
     ctx.setLineDash([])
     ctx.beginPath()
     ctx.arc(top.x, top.y, 3 * this.u, 0, TAU)
-    ctx.fillStyle = 'rgba(0,0,0,0.55)'
+    ctx.fillStyle = ACCENT
     ctx.fill()
     if (!this.mobile) {
       ctx.font = `500 ${11 * this.s}px ${SANS}`
@@ -683,20 +579,20 @@ export class PipelineScene {
     const y = this.lineY - this.hdr
     const x = (d) => this.pos(d).x
     const groups = [
-      { t: 'Teach your bot', a: x(st.upload) - this.gateR, b: x(st.index) + this.gateR },
-      { t: 'Answer with evidence', a: x(st.retrieve) - this.gateR, b: x(st.answer) + this.gateR },
-      { t: 'Go live', a: x(st.widget) - 30 * this.u, b: x(st.widget) + 30 * this.u },
+      { t: 'BUILD YOUR KNOWLEDGE', a: x(st.upload) - this.gateR, b: x(st.index) + this.gateR },
+      { t: 'ANSWERS WITH SOURCES', a: x(st.retrieve) - this.gateR, b: x(st.answer) + this.gateR },
+      { t: 'READY TO EMBED', a: x(st.widget) - 40 * this.u, b: Math.min(this.W - 20 * s, x(st.widget) + 40 * this.u), align: 'right' },
     ]
-    ctx.font = `500 ${11.5 * s}px ${SANS}`
-    ctx.textAlign = 'left'
+    ctx.font = `600 ${10.5 * s}px ${SANS}`
     ctx.textBaseline = 'middle'
     for (const g of groups) {
-      ctx.fillStyle = 'rgba(0,0,0,0.55)'
-      ctx.fillText(g.t, g.a, y)
+      ctx.textAlign = g.align || 'left'
+      ctx.fillStyle = 'rgba(49,55,80,0.62)'
+      ctx.fillText(g.t, g.align === 'right' ? g.b : g.a, y)
       ctx.beginPath()
       ctx.moveTo(g.a, y + 12 * s)
       ctx.lineTo(g.b, y + 12 * s)
-      ctx.strokeStyle = 'rgba(0,0,0,0.18)'
+      ctx.strokeStyle = 'rgba(49,55,80,0.16)'
       ctx.lineWidth = 1
       ctx.stroke()
       for (const ex of [g.a, g.b]) {
@@ -708,18 +604,63 @@ export class PipelineScene {
     }
     // brain label
     ctx.textAlign = 'center'
-    ctx.fillStyle = 'rgba(0,0,0,0.55)'
-    ctx.fillText('Your knowledge base', this.C.x, this.C.y - 0.86 * this.R - 16 * s)
+    ctx.fillStyle = 'rgba(49,55,80,0.68)'
+    ctx.fillText('YOUR KNOWLEDGE BASE', this.C.x, this.C.y - 0.86 * this.R - 16 * s)
+  }
+
+  brainPulse() {
+    const wave = 0.5 + 0.5 * Math.sin(this.t * 1.4 - Math.PI / 2)
+    return 0.08 + 0.42 * wave
   }
 
   drawGlow(ctx) {
     const { C, R } = this
-    const e = 0.035 + 0.07 * this.glow
+    const strength = Math.max(this.glow, this.brainPulse())
+    const e = 0.01 + 0.11 * strength
     const g = ctx.createRadialGradient(C.x, C.y, R * 0.2, C.x, C.y, R * 1.45)
-    g.addColorStop(0, `rgba(0,0,0,${e})`)
-    g.addColorStop(1, 'rgba(0,0,0,0)')
+    g.addColorStop(0, `rgba(98,88,245,${e * 0.36})`)
+    g.addColorStop(0.58, `rgba(98,88,245,${0.004 + strength * 0.025})`)
+    g.addColorStop(1, 'rgba(98,88,245,0)')
     ctx.fillStyle = g
     ctx.fillRect(C.x - R * 1.6, C.y - R * 1.5, R * 3.2, R * 3.1)
+  }
+
+  drawLaserOutline(ctx) {
+    const strength = Math.max(this.glow, this.brainPulse())
+    if (strength < 0.015) return
+
+    const points = this.outlinePx
+    let perimeter = 0
+    for (let i = 0; i < points.length; i++) {
+      const a = points[i]
+      const b = points[(i + 1) % points.length]
+      perimeter += Math.hypot(b[0] - a[0], b[1] - a[1])
+    }
+    ctx.save()
+    ctx.beginPath()
+    points.forEach(([x, y], i) => (i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)))
+    ctx.closePath()
+    ctx.lineJoin = 'round'
+    ctx.lineCap = 'round'
+
+    // A soft violet aura sits just outside the brain contour.
+    ctx.strokeStyle = `rgba(98,88,245,${0.9 * strength})`
+    ctx.lineWidth = 1.55
+    ctx.shadowColor = `rgba(98,88,245,${0.95 * strength})`
+    ctx.shadowBlur = this.R * 0.16 * strength
+    ctx.stroke()
+
+    // A bright short segment travels around the contour like a laser scan.
+    const trace = Math.min(perimeter * 0.16, this.R * 0.72)
+    ctx.setLineDash([trace, Math.max(1, perimeter - trace)])
+    ctx.lineDashOffset = -((this.t * this.R * 1.9) % perimeter)
+    ctx.strokeStyle = `rgba(151,140,255,${0.98 * strength})`
+    ctx.lineWidth = 2.5
+    ctx.shadowColor = `rgba(98,88,245,${strength})`
+    ctx.shadowBlur = this.R * 0.2 * strength
+    ctx.stroke()
+    ctx.setLineDash([])
+    ctx.restore()
   }
 
   drawBrain(ctx) {
@@ -733,7 +674,7 @@ export class PipelineScene {
       ctx.beginPath()
       ctx.moveTo(nodesPx[a][0], nodesPx[a][1])
       ctx.lineTo(nodesPx[c][0], nodesPx[c][1])
-      ctx.strokeStyle = `rgba(0,0,0,${Math.min(0.6, e * 0.55)})`
+      ctx.strokeStyle = `rgba(49,55,80,${Math.min(0.58, e * 0.58)})`
       ctx.lineWidth = 1 + e * 0.5
       ctx.stroke()
     }
@@ -742,12 +683,12 @@ export class PipelineScene {
       const [x, y] = nodesPx[i]
       ctx.beginPath()
       ctx.arc(x, y, (1.6 + e * 3.2) * u, 0, TAU)
-      ctx.fillStyle = e > 0.02 ? `rgba(0,0,0,${0.35 + e * 0.65})` : 'rgba(0,0,0,0.3)'
+      ctx.fillStyle = e > 0.02 ? `rgba(49,55,80,${0.34 + e * 0.5})` : 'rgba(49,55,80,0.28)'
       ctx.fill()
       if (e > 0.05) {
         ctx.beginPath()
         ctx.arc(x, y, (5 + e * 7) * u, 0, TAU)
-        ctx.strokeStyle = `rgba(0,0,0,${e * 0.28})`
+        ctx.strokeStyle = `rgba(49,55,80,${e * 0.3})`
         ctx.lineWidth = 1
         ctx.stroke()
       }
@@ -756,101 +697,106 @@ export class PipelineScene {
     ctx.textAlign = 'center'
     ctx.textBaseline = 'middle'
     for (const m of this.memories) {
-      const a = 0.95 - 0.7 * smooth(0, 10, this.t - m.born)
+      const a = 0.85 * (1 - smooth(0, 5.5, this.t - m.born))
       ctx.lineWidth = 2.4
-      ctx.strokeStyle = `rgba(255,255,255,${0.85 * a})`
+      ctx.strokeStyle = `rgba(255,255,255,${0.92 * a})`
       ctx.strokeText(m.ch, m.x, m.y)
-      ctx.fillStyle = `rgba(0,0,0,${a})`
+      ctx.fillStyle = `rgba(49,55,80,${a})`
       ctx.fillText(m.ch, m.x, m.y)
-    }
-  }
-
-  gateList() {
-    const st = this.st
-    const gates = [
-      { i: 0, d: st.upload, off: 0 },
-      { i: 1, d: st.ext, off: this.laneOffs.rows },
-      { i: 1, d: st.ext, off: 0 },
-      { i: 1, d: st.ext, off: this.laneOffs.ocr },
-      { i: 2, d: st.chunk, off: 0 },
-      { i: 3, d: st.embed, off: 0 },
-      { i: 4, d: st.index, off: 0 },
-      { i: 5, d: st.retrieve, off: 0 },
-      { i: 6, d: st.rerank, off: 0 },
-      { i: 7, d: st.verify, off: 0 },
-      { i: 8, d: st.answer, off: 0 },
-    ]
-    return gates
-  }
-
-  drawGates(ctx, half) {
-    const r = this.gateR
-    for (const g of this.gateList()) {
-      const c = this.pos(g.d, g.off)
-      const fl = Math.max(0, 1 - (this.t - this.flash[g.i]) / 0.8)
-      const act = this.active === g.i ? 1 : 0
-      const a = 0.32 + 0.5 * fl + 0.38 * act
-      ctx.beginPath()
-      const rot = Math.atan2(c.ny, c.nx)
-      if (half === 'back') ctx.ellipse(c.x, c.y, r, r * 0.3, rot, Math.PI, TAU)
-      else ctx.ellipse(c.x, c.y, r, r * 0.3, rot, 0, Math.PI)
-      ctx.strokeStyle = `rgba(0,0,0,${half === 'back' ? a * 0.55 : Math.min(1, a)})`
-      ctx.lineWidth = (half === 'back' ? 1 : 1.3) + act * 0.7
-      ctx.stroke()
     }
   }
 
   drawWidget(ctx) {
     const { u } = this
-    const p = this.pos(this.st.widget)
-    const w = 54 * u
-    const h = 68 * u
+    const p = this.widgetPos()
+    const k = u * (this.mobile ? 1 : Math.min(1, this.W / 1100))
+    const w = 86 * k
+    const h = 112 * k
     const x = p.x - w / 2
     const y = p.y - h / 2
-    const act = this.active === 9
-    drawRoundRect(ctx, x, y, w, h, 8 * u)
+    const font = Math.max(6.2, 7 * k)
+    ctx.save()
+    drawRoundRect(ctx, x, y, w, h, 8 * k)
     ctx.fillStyle = '#fff'
+    ctx.shadowColor = 'rgba(98,88,245,0.14)'
+    ctx.shadowBlur = 22 * k
+    ctx.shadowOffsetY = 7 * k
     ctx.fill()
-    ctx.lineWidth = act ? 2 : 1.3
-    ctx.strokeStyle = 'rgba(0,0,0,0.9)'
+    ctx.shadowColor = 'transparent'
+    ctx.shadowBlur = 0
+    ctx.shadowOffsetY = 0
+    ctx.lineWidth = 1.3
+    ctx.strokeStyle = 'rgba(35,39,62,0.82)'
     ctx.stroke()
-    // header
+    // assistant header
     ctx.beginPath()
-    ctx.moveTo(x, y + 14 * u)
-    ctx.lineTo(x + w, y + 14 * u)
+    ctx.moveTo(x, y + 20 * k)
+    ctx.lineTo(x + w, y + 20 * k)
     ctx.lineWidth = 1
-    ctx.strokeStyle = 'rgba(0,0,0,0.3)'
+    ctx.strokeStyle = 'rgba(35,39,62,0.12)'
     ctx.stroke()
-    for (let i = 0; i < 3; i++) {
+    ctx.beginPath()
+    ctx.arc(x + 11 * k, y + 10 * k, 4 * k, 0, TAU)
+    ctx.fillStyle = ACCENT
+    ctx.fill()
+    ctx.font = `600 ${Math.max(5.3, 6.2 * k)}px ${SANS}`
+    ctx.textAlign = 'left'
+    ctx.textBaseline = 'middle'
+    ctx.fillStyle = 'rgba(35,39,62,0.78)'
+    ctx.fillText('KNOWLEDGE AI', x + 19 * k, y + 10 * k)
+
+    // Visitor prompt
+    const qx = x + w * 0.31
+    const qy = y + 27 * k
+    const qw = w * 0.6
+    drawRoundRect(ctx, qx, qy, qw, 13 * k, 5 * k)
+    ctx.fillStyle = 'rgba(35,39,62,0.92)'
+    ctx.fill()
+    ctx.fillStyle = 'rgba(255,255,255,0.76)'
+    ctx.beginPath()
+    ctx.moveTo(qx + 8 * k, qy + 6.5 * k)
+    ctx.lineTo(qx + qw - 8 * k, qy + 6.5 * k)
+    ctx.lineWidth = 1.3 * k
+    ctx.stroke()
+
+    // Source-backed answer
+    drawRoundRect(ctx, x + 8 * k, y + 46 * k, w - 16 * k, 30 * k, 5 * k)
+    ctx.fillStyle = 'rgba(98,88,245,0.055)'
+    ctx.fill()
+    ctx.font = `600 ${font}px ${SANS}`
+    ctx.fillStyle = 'rgba(35,39,62,0.84)'
+    ctx.fillText('Found in your files', x + 13 * k, y + 54 * k)
+    ctx.strokeStyle = 'rgba(35,39,62,0.3)'
+    ctx.lineWidth = 1.15 * k
+    for (let i = 0; i < 2; i++) {
+      const yy = y + (62 + i * 6) * k
       ctx.beginPath()
-      ctx.arc(x + 8 * u + i * 6 * u, y + 7 * u, 1.6 * u, 0, TAU)
-      ctx.fillStyle = 'rgba(0,0,0,0.5)'
-      ctx.fill()
+      ctx.moveTo(x + 13 * k, yy)
+      ctx.lineTo(x + (i === 0 ? 62 : 51) * k, yy)
+      ctx.stroke()
     }
-    // conversation
-    const rows = [
-      { y: 21, w: 0.55, left: true },
-      { y: 31, w: 0.5, left: false },
-      { y: 41, w: 0.6, left: true },
-    ]
-    rows.forEach((r, i) => {
-      const msg = this.widgetMsgs[this.widgetMsgs.length - 3 + i]
-      const fresh = msg ? 1 - smooth(0, 1.4, this.t - msg.born) : 0
-      const bw = (w - 12 * u) * r.w
-      const bx = r.left ? x + 6 * u : x + w - 6 * u - bw
-      drawRoundRect(ctx, bx, y + r.y * u, bw, 6.5 * u, 3 * u)
-      if (r.left) {
-        ctx.fillStyle = `rgba(0,0,0,${0.09 + 0.12 * (msg ? 1 : 0) + 0.5 * fresh})`
-        ctx.fill()
-      } else {
-        ctx.fillStyle = 'rgba(0,0,0,0.78)'
-        ctx.fill()
-      }
-    })
-    drawRoundRect(ctx, x + 6 * u, y + h - 12 * u, w - 12 * u, 6 * u, 3 * u)
-    ctx.strokeStyle = 'rgba(0,0,0,0.35)'
+
+    const newest = this.widgetMsgs[this.widgetMsgs.length - 1]
+    const fresh = newest ? 1 - smooth(0, 1.3, this.t - newest.born) : 0
+    const sx = x + 8 * k
+    const sy = y + 81 * k
+    const sw = 56 * k
+    drawRoundRect(ctx, sx, sy, sw, 14 * k, 7 * k)
+    ctx.fillStyle = ACCENT_SOFT
+    ctx.fill()
+    ctx.beginPath()
+    ctx.arc(sx + 7 * k, sy + 7 * k, 2 * k + 1.5 * k * fresh, 0, TAU)
+    ctx.fillStyle = ACCENT
+    ctx.fill()
+    ctx.font = `600 ${Math.max(5.1, 5.8 * k)}px ${SANS}`
+    ctx.fillStyle = ACCENT
+    ctx.fillText('SOURCES CITED', sx + 13 * k, sy + 7.2 * k)
+
+    drawRoundRect(ctx, x + 8 * k, y + 99 * k, w - 16 * k, 7 * k, 3.5 * k)
+    ctx.strokeStyle = 'rgba(35,39,62,0.2)'
     ctx.lineWidth = 1
     ctx.stroke()
+    ctx.restore()
   }
 
   drawAbstainNode(ctx) {
@@ -880,14 +826,13 @@ export class PipelineScene {
   }
 
   filePose(f) {
-    const { st, s, u } = this
+    const { s, u } = this
     const base = this.at(f.d)
-    const lane = this.laneOff(f.lane, f.d)
     const spread = f.spread * Math.exp(-(this.t - f.born) * 3.5)
-    const calm = smooth(st.split - 20 * s, st.split + 30 * s, f.d)
-    const wob = Math.sin(f.ph + this.t * 1.4) * 0.18 * (1 - calm)
-    const bob = Math.sin(f.ph * 1.7 + this.t * 2) * 2.5 * u * (1 - calm)
-    const off = lane + spread + bob
+    const calm = smooth(this.st.upload, this.st.ext + 42 * s, f.d)
+    const wob = Math.sin(f.ph + this.t * 1.4) * 0.12 * (1 - calm)
+    const bob = Math.sin(f.ph * 1.7 + this.t * 2) * 1.5 * u * (1 - calm)
+    const off = spread + bob
     return { x: base.x + base.nx * off, y: base.y + base.ny * off, rot: wob }
   }
 
@@ -922,16 +867,16 @@ export class PipelineScene {
         drawTextPage(ctx, a)
         ctx.restore()
         if (wipe < 0.999) {
-          const g = ctx.createLinearGradient(fx - 7, 0, fx, 0)
-          g.addColorStop(0, 'rgba(0,0,0,0)')
-          g.addColorStop(1, 'rgba(0,0,0,0.12)')
+          const g = ctx.createLinearGradient(fx - 8, 0, fx, 0)
+          g.addColorStop(0, 'rgba(98,88,245,0)')
+          g.addColorStop(1, 'rgba(98,88,245,0.2)')
           ctx.fillStyle = g
-          ctx.fillRect(fx - 7, -f.h / 2 - 5, 7, f.h + 10)
+          ctx.fillRect(fx - 8, -f.h / 2 - 5, 8, f.h + 10)
           ctx.beginPath()
-          ctx.moveTo(fx, -f.h / 2 - 6)
-          ctx.lineTo(fx, f.h / 2 + 6)
-          ctx.strokeStyle = 'rgba(0,0,0,0.9)'
-          ctx.lineWidth = 1.2
+          ctx.moveTo(fx, -f.h / 2 - 7)
+          ctx.lineTo(fx, f.h / 2 + 7)
+          ctx.strokeStyle = ACCENT
+          ctx.lineWidth = 1.35
           ctx.stroke()
         }
       }
@@ -940,59 +885,42 @@ export class PipelineScene {
   }
 
   chunkPose(c) {
-    const { u, s } = this
+    const { u } = this
     const base = this.at(c.d)
-    const k = easeOut((this.t - c.born) / 0.55)
-    const off = (c.idx - 1) * 21 * u * k
-    return { x: base.x + base.nx * off, y: base.y + base.ny * off, k }
+    const k = easeOut((this.t - c.born) / 0.62)
+    const off = (c.idx - 1) * 27 * u * k
+    return { x: base.x + base.nx * off, y: base.y + base.ny * off, k, angle: (c.idx - 1) * 0.035 * (1 - k) }
   }
 
   drawChunks(ctx) {
-    const { st, s, u } = this
-    const band = 13 * s
+    const { st, u } = this
+    const band = 25 * this.s
     for (const c of this.chunks) {
       const p = this.chunkPose(c)
       const vec = smooth(st.embed - band, st.embed + band, c.d)
-      const cw = lerp(38, 28, p.k)
-      const ch = lerp(48, 16, p.k)
+      const cw = lerp(42, 35, p.k)
+      const ch = lerp(28, 23, p.k)
       ctx.save()
       ctx.translate(p.x, p.y)
+      ctx.rotate(p.angle)
       ctx.scale(u, u)
-      const fx = 14 - vec * 28
-      if (vec < 0.999) {
-        ctx.save()
+      ctx.globalAlpha = 1 - vec
+      drawChunkCard(ctx, 1, cw, ch)
+      ctx.globalAlpha = vec
+      // Passage vectors emerge as the excerpts reach indexing.
+      const dots = [[-9, -4], [0, -4], [9, -4], [-9, 5], [0, 5], [9, 5]]
+      ctx.beginPath()
+      dots.forEach(([x, y], i) => i ? ctx.lineTo(x, y) : ctx.moveTo(x, y))
+      ctx.strokeStyle = INDEX_INK
+      ctx.globalAlpha = vec * 0.48
+      ctx.lineWidth = 1.25
+      ctx.stroke()
+      for (const [x, y] of dots) {
         ctx.beginPath()
-        ctx.rect(-40, -40, fx + 40, 80)
-        ctx.clip()
-        drawChunkCard(ctx, 1, cw, ch)
-        ctx.restore()
-      }
-      if (vec > 0.001) {
-        ctx.save()
-        ctx.beginPath()
-        ctx.rect(fx, -40, 80, 80)
-        ctx.clip()
-        ctx.setLineDash([2, 2.5])
-        ctx.strokeStyle = 'rgba(0,0,0,0.35)'
-        ctx.lineWidth = 1
-        ctx.strokeRect(-14, -8, 28, 16)
-        ctx.setLineDash([])
-        ctx.font = `600 6.6px ${MONO}`
-        ctx.textAlign = 'center'
-        ctx.textBaseline = 'middle'
-        ctx.fillStyle = 'rgba(0,0,0,0.92)'
-        for (let r = 0; r < 2; r++) {
-          for (let q = 0; q < 4; q++) ctx.fillText(this.bitOf(c.seed + q * 0.13 + r * 0.31, q + r), -10.5 + q * 7, -3.8 + r * 7.6)
-        }
-        ctx.restore()
-        if (vec < 0.999) {
-          ctx.beginPath()
-          ctx.moveTo(fx, -12)
-          ctx.lineTo(fx, 12)
-          ctx.strokeStyle = 'rgba(0,0,0,0.9)'
-          ctx.lineWidth = 1.2
-          ctx.stroke()
-        }
+        ctx.arc(x, y, 2.2, 0, TAU)
+        ctx.fillStyle = INDEX_INK
+        ctx.globalAlpha = vec
+        ctx.fill()
       }
       ctx.restore()
     }
@@ -1004,13 +932,22 @@ export class PipelineScene {
     return this.pos(pk.d, off)
   }
 
+  widgetPos() {
+    const d = this.mobile ? this.st.widget : this.st.widget - 16 * this.s
+    const p = this.pos(d, this.mobile ? 54 * this.u : 0)
+    const pad = this.mobile ? 12 * this.s : 24 * this.s
+    p.x = clamp(p.x, 43 * this.u + pad, this.W - 43 * this.u - pad)
+    return p
+  }
+
   drawPackets(ctx) {
     const { u, st, s } = this
     for (const pk of this.packets) {
       const P = this.packetPos(pk)
-      const fadeA = 1 - pk.fade
-      const verifyConv = smooth(st.verify, st.answer - 10 * s, pk.d)
-      const reranked = pk.state === 'rerank' ? smooth(0.15, 0.7, pk.hold) : pk.doneRerank ? 1 : 0
+      const verifyConv = pk.abstain
+        ? smooth(st.verify - 8 * s, st.answer, pk.d)
+        : smooth(st.verify, st.answer - 10 * s, pk.d)
+      const reranked = smooth(st.rerank - 12 * s, st.rerank + 28 * s, pk.d)
       for (const c of pk.chips) {
         let cx
         let cy
@@ -1054,22 +991,22 @@ export class PipelineScene {
         ctx.save()
         ctx.translate(cx, cy)
         ctx.scale(u * 0.82, u * 0.82)
-        drawChunkCard(ctx, a * fadeA, 28, 16)
+        drawChunkCard(ctx, a, 28, 16)
         ctx.restore()
       }
-      this.drawBubble(ctx, pk, P, fadeA)
-      if (pk.state === 'verify' && pk.verdict > 0) this.drawVerdict(ctx, pk)
+      if (pk.state !== 'abstained') this.drawBubble(ctx, pk, P)
+      if (pk.verdict > 0.02) this.drawVerdict(ctx, pk)
     }
   }
 
-  drawBubble(ctx, pk, P, fadeA) {
+  drawBubble(ctx, pk, P) {
     const { u, st, s } = this
     const ans = pk.abstain ? 0 : smooth(st.answer - 18 * s, st.answer + 26 * s, pk.d)
     const w = lerp(30, 46, ans) * u
     const h = lerp(18, 28, ans) * u
     const x = P.x - w / 2
     const y = P.y - h / 2
-    const a = (pk.abstain && pk.doneVerify ? 0.75 : 1) * fadeA * smooth(0, 0.3, this.t - pk.t0)
+    const a = (pk.abstain && pk.doneVerify ? 0.75 : 1) * smooth(0, 0.3, this.t - pk.t0)
     ctx.save()
     ctx.globalAlpha = a
     // tail
@@ -1077,10 +1014,13 @@ export class PipelineScene {
     ctx.moveTo(x + 5 * u, y + h - 1)
     ctx.lineTo(x + 3 * u, y + h + 5 * u)
     ctx.lineTo(x + 11 * u, y + h - 1)
-    ctx.fillStyle = ans > 0.5 ? '#000' : '#fff'
+    ctx.fillStyle = '#fff'
     ctx.fill()
+    ctx.strokeStyle = '#000'
+    ctx.lineWidth = 1.3
+    ctx.stroke()
     drawRoundRect(ctx, x, y, w, h, 6 * u)
-    ctx.fillStyle = ans > 0.5 ? '#000' : '#fff'
+    ctx.fillStyle = '#fff'
     ctx.fill()
     if (pk.abstain && pk.doneVerify) ctx.setLineDash([2.5, 2.5])
     ctx.strokeStyle = '#000'
@@ -1102,7 +1042,7 @@ export class PipelineScene {
         ctx.beginPath()
         ctx.moveTo(x + 7 * u, y + (7 + i * 6) * u)
         ctx.lineTo(x + 7 * u + lw, y + (7 + i * 6) * u)
-        ctx.strokeStyle = 'rgba(255,255,255,0.92)'
+        ctx.strokeStyle = 'rgba(0,0,0,0.84)'
         ctx.lineWidth = 1.6
         ctx.lineCap = 'round'
         ctx.stroke()
@@ -1110,15 +1050,15 @@ export class PipelineScene {
       if (typed > 0.85) {
         ctx.beginPath()
         ctx.arc(x + w - 2 * u, y + 1 * u, 5.5 * u, 0, TAU)
-        ctx.fillStyle = '#fff'
+        ctx.fillStyle = ACCENT_SOFT
         ctx.fill()
-        ctx.strokeStyle = '#000'
+        ctx.strokeStyle = ACCENT
         ctx.lineWidth = 1.2
         ctx.stroke()
         ctx.font = `700 ${7 * u}px ${SANS}`
         ctx.textAlign = 'center'
         ctx.textBaseline = 'middle'
-        ctx.fillStyle = '#000'
+        ctx.fillStyle = ACCENT
         ctx.fillText('1', x + w - 2 * u, y + 1.4 * u)
       }
     }
@@ -1136,7 +1076,7 @@ export class PipelineScene {
     ctx.globalAlpha = k
     ctx.beginPath()
     ctx.arc(cx, cy, r, 0, TAU)
-    ctx.fillStyle = pk.abstain ? '#fff' : '#000'
+    ctx.fillStyle = pk.abstain ? '#fff' : ACCENT
     ctx.fill()
     ctx.strokeStyle = '#000'
     ctx.lineWidth = 1.3
@@ -1178,7 +1118,7 @@ export class PipelineScene {
       ctx.lineWidth = 2.4
       ctx.strokeStyle = 'rgba(255,255,255,0.85)'
       ctx.strokeText(p.ch, x, y)
-      ctx.fillStyle = `rgba(0,0,0,${0.95 - 0.3 * k})`
+      ctx.fillStyle = `rgba(49,55,80,${0.82 - 0.22 * k})`
       ctx.fillText(p.ch, x, y)
     }
   }
@@ -1192,7 +1132,10 @@ export class PipelineScene {
       const r = (p.kind === 'node' ? 4 + k * 22 : 6 + k * (p.kind === 'widget' ? 40 : 26)) * u
       ctx.beginPath()
       ctx.arc(p.x, p.y, r, 0, TAU)
-      ctx.strokeStyle = `rgba(0,0,0,${(p.kind === 'node' ? 0.3 : 0.45) * (1 - k)})`
+      const alpha = (p.kind === 'node' || p.kind === 'entry' || p.kind === 'abstain' ? 0.36 : 0.5) * (1 - k)
+      ctx.strokeStyle = p.kind === 'widget'
+        ? `rgba(98,88,245,${alpha})`
+        : `rgba(49,55,80,${alpha})`
       ctx.lineWidth = 1.1
       ctx.stroke()
     }
@@ -1203,51 +1146,36 @@ export class PipelineScene {
     const full = this.labelMode === 'full'
     const bs = this.mobile ? 7.5 * s : 10.5 * s
     this.anchors.forEach((a, i) => {
-      const act = this.active === i
-      const fl = Math.max(0, 1 - (this.t - this.flash[i]) / 0.8)
       // guide tick (desktop)
-      if (!this.mobile) {
+      if (!this.mobile && i !== 6) {
         const top = i === 1 ? this.lineY + this.laneAmp + this.gateR + 6 : this.lineY + this.gateR + 6
         ctx.beginPath()
         ctx.moveTo(a.x, top)
         ctx.lineTo(a.x, a.by - bs - 4)
         ctx.setLineDash([1.5, 3.5])
-        ctx.strokeStyle = `rgba(0,0,0,${act ? 0.55 : 0.2})`
+        ctx.strokeStyle = 'rgba(0,0,0,0.2)'
         ctx.lineWidth = 1
         ctx.stroke()
         ctx.setLineDash([])
       }
       ctx.beginPath()
       ctx.arc(a.bx, a.by, bs, 0, TAU)
-      ctx.fillStyle = act ? '#000' : '#fff'
+      ctx.fillStyle = '#fff'
       ctx.fill()
-      ctx.strokeStyle = `rgba(0,0,0,${0.55 + 0.4 * Math.max(fl, act ? 1 : 0)})`
-      ctx.lineWidth = act ? 1.6 : 1.1
+      ctx.strokeStyle = 'rgba(0,0,0,0.55)'
+      ctx.lineWidth = 1.1
       ctx.stroke()
       ctx.font = `600 ${(this.mobile ? 8 : 10.5) * s}px ${SANS}`
       ctx.textAlign = 'center'
       ctx.textBaseline = 'middle'
-      ctx.fillStyle = act ? '#fff' : '#000'
+      ctx.fillStyle = '#000'
       ctx.fillText(String(i + 1), a.bx, a.by + 0.5)
       if (full) {
-        ctx.font = `${act ? 600 : 500} ${this.titleFs}px ${SANS}`
-        ctx.fillStyle = act ? '#000' : 'rgba(0,0,0,0.68)'
+        ctx.font = `500 ${this.titleFs}px ${SANS}`
+        ctx.fillStyle = 'rgba(0,0,0,0.68)'
         ctx.fillText(STEPS[i].title, a.bx, a.by + bs + 15 * s)
       }
     })
-    // lane tags
-    if (!this.mobile) {
-      const dx = this.st.split + this.ramp + 4
-      const tags = [['Rows', this.laneOffs.rows], ['Layout', 0], ['OCR', this.laneOffs.ocr]]
-      ctx.font = `500 ${10 * s}px ${SANS}`
-      ctx.textAlign = 'left'
-      ctx.textBaseline = 'middle'
-      for (const [t, off] of tags) {
-        const p = this.pos(dx, off)
-        ctx.fillStyle = 'rgba(0,0,0,0.5)'
-        ctx.fillText(t, p.x, p.y - 12 * s)
-      }
-    }
     // brain label (mobile)
     if (this.mobile) {
       ctx.font = `500 ${10 * s}px ${SANS}`
@@ -1257,57 +1185,4 @@ export class PipelineScene {
     }
   }
 
-  wrap(ctx, text, maxW) {
-    const words = text.split(' ')
-    const lines = []
-    let cur = ''
-    for (const w of words) {
-      const test = cur ? `${cur} ${w}` : w
-      if (ctx.measureText(test).width > maxW && cur) {
-        lines.push(cur)
-        cur = w
-      } else cur = test
-    }
-    if (cur) lines.push(cur)
-    return lines
-  }
-
-  drawCaption(ctx) {
-    const i = this.active
-    const a = this.anchors[i]
-    const step = STEPS[i]
-    const s = this.s
-    const fs = this.mobile ? 11.5 : 13 * Math.min(1.1, s + 0.1)
-    const lh = fs * 1.4
-    let x
-    let y
-    let maxW
-    let align = 'left'
-    if (!this.mobile) {
-      maxW = 300 * Math.max(0.85, s)
-      x = clamp(a.x - maxW / 2, 20, this.W - maxW - 20)
-      y = a.by + 52 * s
-    } else {
-      x = this.xL + 92 * this.s
-      maxW = this.xR - 40 - x
-      y = Math.max(84, this.lineY - this.mobLr - 8) + 18
-    }
-    ctx.font = `400 ${fs}px ${SANS}`
-    const lines = this.wrap(ctx, step.text, maxW)
-    const swap = smooth(0, 0.25, this.t - (this._capT ?? 0))
-    if (this._capI !== i) {
-      this._capI = i
-      this._capT = this.t
-    }
-    ctx.globalAlpha = swap
-    ctx.textAlign = align
-    ctx.textBaseline = 'top'
-    ctx.font = `600 ${fs}px ${SANS}`
-    ctx.fillStyle = '#000'
-    ctx.fillText(`${i + 1}  ${step.title}`, x, y)
-    ctx.font = `400 ${fs}px ${SANS}`
-    ctx.fillStyle = 'rgba(0,0,0,0.62)'
-    lines.forEach((l, k) => ctx.fillText(l, x, y + lh * (k + 1.15)))
-    ctx.globalAlpha = 1
-  }
 }

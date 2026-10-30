@@ -171,7 +171,7 @@ function genFolds(d, seed) {
 
 const foldCache = new Map()
 export function getFolds(tier) {
-  if (!foldCache.has(tier)) foldCache.set(tier, genFolds(tier === 0 ? 0.05 : 0.09, 7 + tier))
+  if (!foldCache.has(tier)) foldCache.set(tier, genFolds(tier === 0 ? 0.072 : 0.11, 7 + tier))
   return foldCache.get(tier)
 }
 
