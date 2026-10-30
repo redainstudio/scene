@@ -57,6 +57,26 @@ export default function Hero2() {
 
       <main className="hero2-main">
         <motion.section
+          id="how-it-works"
+          className="hero2-scene"
+          initial={{ opacity: 0, y: 24 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.25, duration: 1.05, ease: EASE }}
+          aria-label="Live animated knowledge pipeline"
+        >
+          <div className="hero2-scene__topline">
+            <span>FROM DOCUMENTS TO INTELLIGENCE</span>
+            <span className="hero2-scene__legend"><i /> LIVE KNOWLEDGE PIPELINE</span>
+          </div>
+          <div className="hero2-scene__canvas">
+            <NeuralCanvas />
+          </div>
+          <div className="hero2-scene__bottomline" aria-hidden="true">
+            <span>INGEST</span><i /><span>UNDERSTAND</span><i /><span>RETRIEVE</span><i /><span>RESPOND</span>
+          </div>
+        </motion.section>
+
+<motion.section
           className="hero2-copy"
           initial={{ opacity: 0, y: 22 }}
           animate={{ opacity: 1, y: 0 }}
