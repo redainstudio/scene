@@ -1255,7 +1255,13 @@ export class PipelineScene {
       // Alternating guide stems make the process read as a clear zig-zag.
       if (!this.mobile) {
         const above = a.by < this.lineY
-        const startY = above ? this.lineY - this.gateR - 5 : this.lineY + this.gateR + 5
+        const dx = a.x - this.C.x
+        const coreRatio = dx / (this.R * 0.96)
+        const insideCore = Math.abs(coreRatio) < 1
+        const contourOffset = insideCore ? this.R * 0.8 * Math.sqrt(1 - coreRatio * coreRatio) : 0
+        const startY = insideCore
+          ? this.C.y + (above ? -contourOffset : contourOffset)
+          : this.lineY + (above ? -this.gateR - 5 : this.gateR + 5)
         const endY = above ? a.by + bs + 5 : a.by - bs - 5
         ctx.beginPath()
         ctx.moveTo(a.x, startY)
