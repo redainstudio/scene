@@ -102,46 +102,41 @@ export class PipelineScene {
     const st = {}
 
     if (!mobile) {
-      const s = clamp(Math.min(W / 1000, H / 700), 0.98, 1.35)
-      const u = 1.05 * s
-      R = 142 * s
-      const x0 = W * 0.015
-      const len = W * 0.97
+      // Desktop uses a deliberate serpentine route: seven stages alternate
+      // between upper and lower lanes, with the brain as the processing hub.
+      const s = clamp(Math.min(W / 900, H / 650), 0.88, 1.16)
+      const u = 1.02 * s
+      R = 82 * s
+      C = { x: W * 0.52, y: H * 0.48 }
+      lineY = C.y
       this.s = s
       this.u = u
-      this.laneAmp = 38 * s
-      this.gateR = 21 * u
-      this.ramp = 42 * s
-      this.abstainAmp = this.laneAmp
-      const hdr = Math.max(this.laneAmp + this.gateR + 44 * s, 0.85 * R + 46 * s)
-      lineY = Math.max(H * 0.51, 92 + hdr)
-      this.hdr = hdr
-      // The rail now breathes around the brain instead of reading as one
-      // perfectly straight conveyor: a raised ingestion approach and a
-      // lower response branch create a more spatial, hand-composed flow.
-      C = { x: x0 + len * 0.515, y: lineY - 0.035 * R }
-      const entryX = C.x - R * 0.99
-      const exitX = C.x + R * 0.99
+      this.laneAmp = 28 * s
+      this.gateR = 16 * u
+      this.ramp = 34 * s
+      this.abstainAmp = 27 * s
+      this.hdr = 0
+
+      const leftBrain = C.x - R * 1.05
+      const rightBrain = C.x + R * 1.05
+      const stage = (x, y) => [W * x, H * y]
       wps = [
-        [x0, lineY],
-        [x0 + len * 0.17, lineY],
-        [x0 + len * 0.255, lineY - 25 * s],
-        [entryX - 24 * s, lineY - 25 * s],
-        [entryX, lineY],
-        [exitX, lineY],
-        [x0 + len * 0.755, lineY + 22 * s],
-        [x0 + len * 0.855, lineY + 22 * s],
-        [x0 + len, lineY],
+        stage(0.035, 0.18),
+        stage(0.075, 0.18),
+        stage(0.20, 0.76),
+        stage(0.34, 0.18),
+        stage(0.46, 0.76),
+        [leftBrain, C.y],
+        [rightBrain, C.y],
+        stage(0.66, 0.18),
+        stage(0.79, 0.76),
+        stage(0.875, 0.39),
+        stage(0.91, 0.22),
       ]
-      cornerR = 24 * s
-      const D = (f) => f * len
-      Object.assign(st, {
-        upload: 36 * s, ext: D(0.155), chunk: D(0.285), embed: D(0.338),
-        index: D(0.392), retrieve: D(0.7), rerank: D(0.765), verify: D(0.83), answer: D(0.905), widget: len,
-      })
-      this.stubOff = -76 * s
-      this.speed = len * 0.068
-      this.x0 = x0
+      cornerR = 34 * s
+      this.stubOff = -54 * s
+      this.speed = 0
+      this.x0 = W * 0.035
     } else {
       const m = clamp(W / 390, 0.8, 1.6)
       const u = clamp((0.55 * W) / 390, 0.5, 0.95)
@@ -183,6 +178,22 @@ export class PipelineScene {
     this.lineY = lineY
     this.pts = buildPolyline(wps, cornerR)
     this.len = this.pts.length - 1
+    if (!mobile) {
+      const at = (x, y) => this.dOf(W * x, H * y)
+      Object.assign(st, {
+        upload: at(0.075, 0.18),
+        ext: at(0.20, 0.76),
+        chunk: at(0.34, 0.18),
+        embed: at(0.43, 0.62),
+        index: at(0.46, 0.76),
+        retrieve: at(0.66, 0.18),
+        rerank: at(0.84, 0.55),
+        verify: at(0.79, 0.76),
+        answer: at(0.875, 0.39),
+        widget: at(0.91, 0.22),
+      })
+      this.speed = this.len * 0.092
+    }
 
     if (mobile) {
       const L1 = this.mobL1
@@ -266,34 +277,33 @@ export class PipelineScene {
   }
 
   buildAnchors() {
-    const { s, u } = this
+    const { s } = this
+    if (!this.mobile) {
+      this.anchors = this.stationD.map((d, i) => {
+        const p = i === 6 ? this.widgetPos() : this.pos(d)
+        const upperLane = i % 2 === 0
+        let bx = p.x
+        let by = p.y + (upperLane ? 58 : -58) * s
+
+        // Keep the answer marker beside the answer card rather than on top of it.
+        if (i === 6) {
+          bx = p.x - 70 * s
+          by = p.y + 12 * s
+        }
+        return { x: p.x, y: p.y, bx, by }
+      })
+      this.labelMode = 'full'
+      this.titleFs = 11 * s
+      return
+    }
+
     this.anchors = this.stationD.map((d, i) => {
       const p = i === 6 ? this.widgetPos() : this.pos(d)
-      let bx
-      let by
-      if (!this.mobile) {
-        const topY = Math.max(42 * s, this.C.y - this.R * 1.28)
-        const bottomY = Math.min(this.H - 54 * s, this.C.y + this.R * 1.28)
-        by = i % 2 === 0 ? topY : bottomY
-        bx = p.x
-      } else {
-        by = i === 6 ? p.y + 64 * u : p.y
-        bx = i === 6 ? p.x : i < 4 ? this.xL - 17 * s : this.xR - 17 * s
-      }
+      const by = i === 6 ? p.y + 64 * this.u : p.y
+      const bx = i === 6 ? p.x : i < 4 ? this.xL - 17 * s : this.xR - 17 * s
       return { x: p.x, y: p.y, bx, by }
     })
-    this.labelMode = 'full'
-    if (!this.mobile) {
-      let minPitch = Infinity
-      const ds = this.anchors.map((_, i) => i)
-      for (let k = 1; k < ds.length; k++) {
-        if (k === 4) continue
-        minPitch = Math.min(minPitch, this.anchors[k].x - this.anchors[k - 1].x)
-      }
-      this.labelMode = minPitch < 44 ? 'num' : 'full'
-      this.titleFs = clamp(minPitch * 0.21, 9.5, 12.5 * s)
-    } else this.labelMode = 'num'
-    void u
+    this.labelMode = 'num'
   }
 
   prerenderBrain() {
@@ -544,9 +554,9 @@ export class PipelineScene {
     const { W, H, dpr } = this
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
     ctx.clearRect(0, 0, W, H)
-    this.drawTrack(ctx)
     this.drawGlow(ctx)
     this.drawBrain(ctx)
+    this.drawTrack(ctx)
     this.drawLaserOutline(ctx)
     this.drawWidget(ctx)
     this.drawAbstainNode(ctx)
@@ -1252,22 +1262,12 @@ export class PipelineScene {
     const stepNotes = ['FILES IN', 'TEXT EXTRACT', 'SMART CHUNKS', 'VECTOR INDEX', 'HYBRID SEARCH', 'SOURCE CHECK', 'CITED RESPONSE']
 
     this.anchors.forEach((a, i) => {
-      // Alternating guide stems make the process read as a clear zig-zag.
       if (!this.mobile) {
-        const above = a.by < this.lineY
-        const dx = a.x - this.C.x
-        const coreRatio = dx / (this.R * 0.96)
-        const insideCore = Math.abs(coreRatio) < 1
-        const contourOffset = insideCore ? this.R * 0.8 * Math.sqrt(1 - coreRatio * coreRatio) : 0
-        const startY = insideCore
-          ? this.C.y + (above ? -contourOffset : contourOffset)
-          : this.lineY + (above ? -this.gateR - 5 : this.gateR + 5)
-        const endY = above ? a.by + bs + 5 : a.by - bs - 5
         ctx.beginPath()
-        ctx.moveTo(a.x, startY)
-        ctx.lineTo(a.x, endY)
+        ctx.moveTo(a.x, a.y)
+        ctx.lineTo(a.bx, a.by)
         ctx.setLineDash([2, 5])
-        ctx.strokeStyle = 'rgba(35,35,39,0.22)'
+        ctx.strokeStyle = 'rgba(35,35,39,0.25)'
         ctx.lineWidth = 1
         ctx.stroke()
         ctx.setLineDash([])
@@ -1277,7 +1277,7 @@ export class PipelineScene {
       ctx.arc(a.bx, a.by, bs, 0, TAU)
       ctx.fillStyle = '#fff'
       ctx.fill()
-      ctx.strokeStyle = 'rgba(0,0,0,0.55)'
+      ctx.strokeStyle = 'rgba(0,0,0,0.58)'
       ctx.lineWidth = 1.1
       ctx.stroke()
 
@@ -1289,11 +1289,11 @@ export class PipelineScene {
 
       if (full) {
         ctx.font = `650 ${Math.max(10, 10.5 * s)}px ${SANS}`
-        ctx.fillStyle = 'rgba(20,20,23,0.9)'
+        ctx.fillStyle = 'rgba(20,20,23,0.92)'
         ctx.fillText(STEPS[i].title, a.bx, a.by + bs + 15 * s)
         if (!this.mobile) {
           ctx.font = `500 ${Math.max(7.5, 7.8 * s)}px ${SANS}`
-          ctx.fillStyle = 'rgba(90,90,96,0.76)'
+          ctx.fillStyle = 'rgba(90,90,96,0.82)'
           ctx.fillText(stepNotes[i], a.bx, a.by + bs + 28 * s)
         }
       }
