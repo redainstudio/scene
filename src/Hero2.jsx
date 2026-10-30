@@ -1,6 +1,6 @@
 import { motion } from 'motion/react'
 import { Plus, ArrowUpRight, LockKeyhole } from 'lucide-react'
-import Hero2Scene from './hero2/Hero2Scene.jsx'
+import NeuralCanvas from './hero2/NeuralCanvas.jsx'
 import './hero2/hero2.css'
 
 const EASE = [0.16, 1, 0.3, 1]
@@ -29,7 +29,7 @@ function GridIcon() {
 
 export default function Hero2() {
   return (
-    <div className="hero2-page hero2-page--constellation">
+    <div className="hero2-page">
       <motion.nav
         className="hero2-nav"
         initial={{ opacity: 0, y: -12 }}
@@ -57,55 +57,63 @@ export default function Hero2() {
         </div>
       </motion.nav>
 
-      <main className="hero2-main hero2-main--constellation">
-        <motion.section
-          className="hero2-story"
-          initial={{ opacity: 0, y: 22 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.16, duration: 0.9, ease: EASE }}
-          aria-labelledby="hero2-title"
-        >
-          <div className="hero2-story__eyebrow"><span /> THE INTELLIGENCE LAYER FOR YOUR BUSINESS</div>
-          <h1 id="hero2-title">Your knowledge.<br /><span>In motion.</span></h1>
-          <p className="hero2-description">
-            Turn scattered documents into a private AI that understands your business, finds the right context, and answers with proof.
-          </p>
-          <div className="hero2-actions">
-            <a className="hero2-button hero2-button--solid" href="#how-it-works">
-              Explore the experience <ArrowUpRight size={16} strokeWidth={1.8} />
-            </a>
-            <a className="hero2-button hero2-button--outline" href="#platform">Discover the platform</a>
-          </div>
-          <div className="hero2-story__foot">
-            <div className="hero2-story__avatars" aria-hidden="true"><span>PDF</span><span>DOC</span><span>AI</span></div>
-            <div><strong>One connected brain.</strong><span>Every answer tied back to its source.</span></div>
-          </div>
-        </motion.section>
-
+      <main className="hero2-main">
         <motion.section
           id="how-it-works"
-          className="hero2-scene hero2-scene--constellation"
-          initial={{ opacity: 0, scale: 0.96, x: 24 }}
-          animate={{ opacity: 1, scale: 1, x: 0 }}
-          transition={{ delay: 0.22, duration: 1.1, ease: EASE }}
-          aria-label="Interactive illustration of documents becoming source-backed AI answers"
+          className="hero2-scene"
+          initial={{ opacity: 0, y: 18, scale: 0.985 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          transition={{ delay: 0.16, duration: 1.05, ease: EASE }}
+          aria-label="How your knowledge assistant works"
         >
           <div className="hero2-scene__topline">
-            <span>FROM RAW INFORMATION</span>
-            <span className="hero2-scene__legend"><i /> TO USEFUL INTELLIGENCE</span>
+            <span>FROM DOCUMENTS TO INTELLIGENCE</span>
+            <span className="hero2-scene__legend"><i /> LIVE KNOWLEDGE PIPELINE</span>
           </div>
-          <Hero2Scene />
+          <div className="hero2-scene__canvas">
+            <NeuralCanvas />
+          </div>
           <div className="hero2-scene__bottomline" aria-hidden="true">
             <span>INGEST</span><i /><span>UNDERSTAND</span><i /><span>RETRIEVE</span><i /><span>RESPOND</span>
           </div>
         </motion.section>
+
+        <motion.section
+          className="hero2-copy"
+          initial={{ opacity: 0, y: 22 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.28, duration: 0.9, ease: EASE }}
+          aria-labelledby="hero2-title"
+        >
+          <div className="hero2-copy__main">
+            <div className="hero2-kicker"><span /> YOUR KNOWLEDGE, IN MOTION</div>
+            <h1 id="hero2-title">Answers grounded in <span>your knowledge.</span></h1>
+            <p className="hero2-description">
+              Turn your documents into an AI assistant that understands your information and shows the source behind every answer.
+            </p>
+            <div className="hero2-actions">
+              <a className="hero2-button hero2-button--solid" href="#how-it-works">
+                See how it works <ArrowUpRight size={16} strokeWidth={1.8} />
+              </a>
+              <a className="hero2-button hero2-button--outline" href="#platform">Explore the platform</a>
+            </div>
+          </div>
+
+          <aside className="hero2-copy__aside" aria-label="Platform benefits">
+            <div className="hero2-proof__heading">BUILT FOR TRUSTED ANSWERS</div>
+            <div className="hero2-proof">
+              <span><i /> Source citations</span>
+              <span><i /> Hybrid search</span>
+              <span><i /> Easy to embed</span>
+            </div>
+            <div className="hero2-assurance">
+              <LockKeyhole size={14} strokeWidth={1.7} />
+              <span>Your knowledge stays private</span>
+            </div>
+          </aside>
+        </motion.section>
       </main>
 
-      <footer className="hero2-footer">
-        <div className="hero2-footer__security"><LockKeyhole size={13} /> Your data stays yours</div>
-        <div className="hero2-footer__proof"><span>Source citations</span><span>Hybrid retrieval</span><span>Easy to embed</span></div>
-        <div className="hero2-footer__note">BUILT FOR KNOWLEDGE THAT MOVES YOU FORWARD <i /></div>
-      </footer>
       <div className="hero2-page__glow" aria-hidden="true" />
     </div>
   )
