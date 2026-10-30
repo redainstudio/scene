@@ -1,18 +1,6 @@
+import { useEffect, useRef } from 'react'
 import { motion } from 'motion/react'
-import {
-  ArrowUpRight,
-  Check,
-  ChevronDown,
-  FileText,
-  LockKeyhole,
-  MessageSquareText,
-  MoreHorizontal,
-  Plus,
-  Search,
-  ShieldCheck,
-  Sparkles,
-  Upload,
-} from 'lucide-react'
+import { ArrowUpRight, LockKeyhole, MoveUpRight } from 'lucide-react'
 import './hero2/hero2.css'
 
 const EASE = [0.16, 1, 0.3, 1]
@@ -28,98 +16,144 @@ function LogoIcon() {
   )
 }
 
-function ProductPreview() {
+function AsciiField() {
+  const canvasRef = useRef(null)
+  const pointer = useRef({ x: -1000, y: -1000 })
+
+  useEffect(() => {
+    const canvas = canvasRef.current
+    const ctx = canvas.getContext('2d')
+    const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    let width = 0
+    let height = 0
+    let dpr = 1
+    let frame = 0
+    let time = 0
+    let last = 0
+    const glyphs = ' .·:;+=*xX#%@'
+    const fontSize = 10
+    const cellW = 7.2
+    const cellH = 11.2
+
+    const resize = () => {
+      const rect = canvas.getBoundingClientRect()
+      width = rect.width
+      height = rect.height
+      dpr = Math.min(window.devicePixelRatio || 1, 2)
+      canvas.width = Math.round(width * dpr)
+      canvas.height = Math.round(height * dpr)
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
+      ctx.font = `${fontSize}px "SFMono-Regular", Consolas, monospace`
+      ctx.textBaseline = 'middle'
+      draw(0)
+    }
+
+    const draw = (delta) => {
+      time += delta
+      ctx.clearRect(0, 0, width, height)
+      const cols = Math.ceil(width / cellW)
+      const rows = Math.ceil(height / cellH)
+      const cx = width * .52
+      const cy = height * .49
+      const radius = Math.min(width * .48, height * .48)
+      const px = pointer.current.x
+      const py = pointer.current.y
+
+      for (let y = 0; y < rows; y++) {
+        for (let x = 0; x < cols; x++) {
+          const pxl = x * cellW
+          const pyl = y * cellH
+          const nx = (pxl - cx) / radius
+          const ny = (pyl - cy) / radius
+          const r = Math.sqrt(nx * nx + ny * ny)
+          const angle = Math.atan2(ny, nx)
+          const waveA = Math.sin(r * 17 - time * 1.25 + angle * 2.4)
+          const waveB = Math.cos(nx * 9 + ny * 7 + time * .72)
+          const ripple = Math.sin(Math.sqrt((pxl - px) ** 2 + (pyl - py) ** 2) * .035 - time * 2)
+          const shell = Math.exp(-Math.pow((r - (.56 + .055 * Math.sin(angle * 3 + time * .35))) * 5.4, 2))
+          const inner = Math.exp(-r * r * 2.8)
+          const strands = Math.max(0, waveA * .5 + waveB * .28 + .22)
+          const density = Math.max(0, Math.min(1, shell * .82 + inner * .24 + strands * .17 - Math.max(0, r - 1.08) * 1.9))
+          if (density < .13) continue
+
+          const shimmer = .78 + .22 * Math.sin(time * 1.4 + x * .18 + y * .12)
+          const local = Math.max(0, ripple) * Math.exp(-Math.sqrt((pxl - px) ** 2 + (pyl - py) ** 2) * .009)
+          const value = Math.min(1, density * shimmer + local * .3)
+          const index = Math.min(glyphs.length - 1, Math.floor(value * (glyphs.length - 1)))
+          const glyph = glyphs[index]
+          const alpha = Math.min(.84, .08 + value * .66 + local * .22)
+          ctx.fillStyle = `rgba(25,25,28,${alpha})`
+          ctx.fillText(glyph, pxl, pyl)
+
+          if (value > .79 && (x + y) % 17 === 0) {
+            ctx.fillStyle = `rgba(0,0,0,${.34 + local * .5})`
+            ctx.fillRect(pxl + 1, pyl - 1, 2, 2)
+          }
+        }
+      }
+
+      // Fine orbital arcs and moving data markers.
+      ctx.save()
+      ctx.translate(cx, cy)
+      ctx.strokeStyle = 'rgba(30,30,34,.12)'
+      ctx.lineWidth = .7
+      for (let i = 0; i < 3; i++) {
+        ctx.beginPath()
+        ctx.ellipse(0, 0, radius * (.39 + i * .16), radius * (.19 + i * .105), -.42 + i * .42, 0, Math.PI * 2)
+        ctx.stroke()
+      }
+      for (let i = 0; i < 7; i++) {
+        const a = time * (.18 + i * .012) + i * (Math.PI * 2 / 7)
+        const rx = radius * (.66 + (i % 2) * .1)
+        const ry = radius * (.39 + (i % 3) * .07)
+        const x = Math.cos(a) * rx
+        const y = Math.sin(a) * ry
+        ctx.beginPath()
+        ctx.arc(x, y, i % 3 === 0 ? 2.2 : 1.2, 0, Math.PI * 2)
+        ctx.fillStyle = i % 3 === 0 ? 'rgba(15,15,17,.8)' : 'rgba(80,80,85,.52)'
+        ctx.fill()
+      }
+      ctx.restore()
+    }
+
+    const tick = (now) => {
+      frame = requestAnimationFrame(tick)
+      const delta = last ? Math.min((now - last) / 1000, .04) : 0
+      last = now
+      draw(delta)
+    }
+
+    const onPointer = (event) => {
+      const rect = canvas.getBoundingClientRect()
+      pointer.current = { x: event.clientX - rect.left, y: event.clientY - rect.top }
+    }
+    const onLeave = () => { pointer.current = { x: -1000, y: -1000 } }
+
+    resize()
+    const observer = new ResizeObserver(resize)
+    observer.observe(canvas)
+    canvas.addEventListener('pointermove', onPointer)
+    canvas.addEventListener('pointerleave', onLeave)
+    if (!reduced) frame = requestAnimationFrame(tick)
+
+    return () => {
+      cancelAnimationFrame(frame)
+      observer.disconnect()
+      canvas.removeEventListener('pointermove', onPointer)
+      canvas.removeEventListener('pointerleave', onLeave)
+    }
+  }, [])
+
+  return <canvas ref={canvasRef} className="ascii-field__canvas" aria-label="Animated ASCII knowledge field" role="img" />
+}
+
+function FloatingReadout({ className, label, value, detail }) {
   return (
-    <motion.div
-      className="product-stage"
-      initial={{ opacity: 0, y: 28, scale: .985 }}
-      animate={{ opacity: 1, y: 0, scale: 1 }}
-      transition={{ delay: .2, duration: 1, ease: EASE }}
-      aria-label="Preview of the NeuralKinetics knowledge assistant"
-    >
-      <div className="product-stage__ambient" />
-      <div className="product-window">
-        <div className="product-window__topbar">
-          <div className="product-window__brand">
-            <span className="product-window__brand-mark"><LogoIcon /></span>
-            <span>NeuralKinetics</span>
-            <i />
-            <span className="product-window__workspace">Acme workspace</span>
-            <ChevronDown size={13} />
-          </div>
-          <div className="product-window__top-actions">
-            <span className="product-window__status"><i /> All systems operational</span>
-            <button type="button" aria-label="More workspace options"><MoreHorizontal size={17} /></button>
-            <span className="product-window__avatar">A</span>
-          </div>
-        </div>
-
-        <div className="product-window__body">
-          <aside className="workspace-sidebar">
-            <div className="workspace-sidebar__search"><Search size={13} /><span>Search workspace</span><kbd>⌘ K</kbd></div>
-            <div className="workspace-sidebar__section">
-              <span className="workspace-sidebar__label">WORKSPACE</span>
-              <div className="workspace-nav workspace-nav--active"><MessageSquareText size={14} /> Assistant <span>⌘1</span></div>
-              <div className="workspace-nav"><FileText size={14} /> Knowledge base</div>
-            </div>
-            <div className="workspace-sidebar__section workspace-sidebar__sources">
-              <div className="workspace-sidebar__label-row"><span className="workspace-sidebar__label">YOUR SOURCES</span><Plus size={13} /></div>
-              <div className="source-file"><span className="source-file__icon source-file__icon--pdf">PDF</span><span><b>Product handbook</b><small>2.4 MB · Updated today</small></span><i /></div>
-              <div className="source-file"><span className="source-file__icon source-file__icon--doc">DOC</span><span><b>Support playbook</b><small>840 KB · Updated yesterday</small></span><i /></div>
-              <div className="source-file"><span className="source-file__icon source-file__icon--sheet">CSV</span><span><b>Pricing & plans</b><small>128 KB · Updated Oct 24</small></span><i /></div>
-              <button className="workspace-add-source" type="button"><Upload size={12} /> Add a source</button>
-            </div>
-            <div className="workspace-sidebar__bottom"><LockKeyhole size={12} /> Private workspace</div>
-          </aside>
-
-          <section className="assistant-panel">
-            <div className="assistant-panel__heading">
-              <div><span className="assistant-panel__eyebrow">AI ASSISTANT</span><h3>Ask your knowledge</h3></div>
-              <span className="assistant-panel__ready"><i /> Ready</span>
-            </div>
-            <div className="assistant-conversation">
-              <div className="assistant-date">TODAY, 10:42 AM</div>
-              <div className="chat-message chat-message--user">What is our refund policy for annual plans?</div>
-              <div className="assistant-response">
-                <div className="assistant-response__identity"><span><Sparkles size={12} /></span><b>NeuralKinetics</b><small>Generated answer</small></div>
-                <p>Annual plans are eligible for a refund within <strong>14 days of the initial purchase</strong>, provided the account has not exceeded the usage threshold.</p>
-                <p>After the 14-day period, subscriptions remain active until the end of the billing term and are not prorated.</p>
-                <div className="answer-confidence"><ShieldCheck size={13} /><span>Answer grounded in your sources</span><b>98% match</b></div>
-                <div className="answer-citations">
-                  <div className="answer-citations__heading"><span>3 SOURCES USED</span><span>View all <ArrowUpRight size={10} /></span></div>
-                  <div className="citation-row"><span className="citation-row__file">PDF</span><span><b>Product handbook</b><small>Section 08 · Refunds & cancellations</small></span><span className="citation-row__page">p. 24</span><ArrowUpRight size={12} /></div>
-                  <div className="citation-row"><span className="citation-row__file citation-row__file--doc">DOC</span><span><b>Support playbook</b><small>Annual subscription policy</small></span><span className="citation-row__page">p. 06</span><ArrowUpRight size={12} /></div>
-                </div>
-              </div>
-            </div>
-            <div className="assistant-composer">
-              <span>Ask anything about your knowledge...</span>
-              <div><span><Plus size={14} /></span><button type="button" aria-label="Send message"><ArrowUpRight size={15} /></button></div>
-            </div>
-            <div className="assistant-panel__foot"><LockKeyhole size={10} /> Your data is private and secure</div>
-          </section>
-        </div>
-      </div>
-
-      <motion.div
-        className="floating-insight floating-insight--top"
-        initial={{ opacity: 0, x: 16, y: 8 }}
-        animate={{ opacity: 1, x: 0, y: 0 }}
-        transition={{ delay: .85, duration: .7, ease: EASE }}
-      >
-        <span className="floating-insight__icon"><Check size={14} /></span>
-        <span><b>Source verified</b><small>Every answer, traceable</small></span>
-      </motion.div>
-      <motion.div
-        className="floating-insight floating-insight--bottom"
-        initial={{ opacity: 0, x: -14, y: 8 }}
-        animate={{ opacity: 1, x: 0, y: 0 }}
-        transition={{ delay: 1, duration: .7, ease: EASE }}
-      >
-        <span className="floating-insight__metric">03</span>
-        <span><b>Connected sources</b><small>One searchable knowledge base</small></span>
-      </motion.div>
-    </motion.div>
+    <div className={`ascii-readout ${className}`}>
+      <span className="ascii-readout__label">{label}</span>
+      <strong>{value}</strong>
+      <small>{detail}</small>
+    </div>
   )
 }
 
@@ -132,64 +166,67 @@ export default function Hero2() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: .7, ease: EASE }}
       >
-        <div className="hero2-nav__left">
-          <a href="/" className="hero2-logo" aria-label="NeuralKinetics home">
-            <LogoIcon />
-            <span>NeuralKinetics</span>
-          </a>
-          <span className="hero2-nav__divider" />
-          <span className="hero2-nav__descriptor">Knowledge infrastructure</span>
-        </div>
+        <a href="/" className="hero2-logo" aria-label="NeuralKinetics home">
+          <LogoIcon /><span>NeuralKinetics</span>
+        </a>
+        <div className="hero2-nav__center"><span className="hero2-nav__pulse" /> KNOWLEDGE ENGINE <span className="hero2-nav__slash">/</span> 01.0</div>
         <div className="hero2-nav__right">
-          <a href="#platform" className="hero2-nav__link">Platform</a>
-          <a href="#how-it-works" className="hero2-nav__link">How it works</a>
-          <a href="#security" className="hero2-nav__link">Security</a>
-          <a href="#get-started" className="hero2-nav__cta">Get started <ArrowUpRight size={14} /></a>
+          <a href="#platform">Platform</a>
+          <a href="#security">Security</a>
+          <a className="hero2-nav__cta" href="#get-started">Get started <ArrowUpRight size={14} /></a>
         </div>
       </motion.nav>
 
       <main className="hero2-main">
-        <section className="hero2-copy" aria-labelledby="hero2-title">
-          <motion.div
-            className="hero2-copy__content"
-            initial={{ opacity: 0, y: 22 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: .08, duration: .85, ease: EASE }}
-          >
-            <div className="hero2-kicker"><span className="hero2-kicker__line" /> THE KNOWLEDGE LAYER FOR YOUR BUSINESS</div>
-            <h1 id="hero2-title">Your knowledge.<br /><span>Finally useful.</span></h1>
-            <p className="hero2-description">
-              Bring your documents, data, and internal expertise together. Give your team an AI assistant that answers with context—and shows exactly where it found the answer.
-            </p>
-            <div className="hero2-actions" id="get-started">
-              <a className="hero2-button hero2-button--solid" href="#platform">Build your knowledge base <ArrowUpRight size={16} /></a>
-              <a className="hero2-button hero2-button--text" href="#how-it-works"><span className="hero2-play"><span /></span> See how it works</a>
-            </div>
-            <div className="hero2-trust">
-              <div className="hero2-trust__avatars"><span>N</span><span>A</span><span>+</span></div>
-              <span>Built for teams that need <b>answers they can trust.</b></span>
-            </div>
-          </motion.div>
-          <div className="hero2-side-note">
-            <span className="hero2-side-note__index">01 / 03</span>
-            <span>From scattered information<br />to confident decisions.</span>
+        <motion.section
+          className="hero2-copy"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: .12, duration: .85, ease: EASE }}
+          aria-labelledby="hero2-title"
+        >
+          <div className="hero2-kicker"><span /> INTELLIGENCE, CONNECTED.</div>
+          <h1 id="hero2-title">Make your<br />knowledge <em>think.</em></h1>
+          <p className="hero2-description">
+            Your information has the answers. NeuralKinetics connects your documents and data to an AI that finds them, understands them, and shows its work.
+          </p>
+          <div className="hero2-actions" id="get-started">
+            <a className="hero2-button hero2-button--solid" href="#platform">Explore the platform <ArrowUpRight size={16} /></a>
+            <a className="hero2-button hero2-button--quiet" href="#how-it-works"><span className="hero2-play"><i /></span> See the system</a>
           </div>
-        </section>
+          <div className="hero2-footnote"><LockKeyhole size={12} /> PRIVATE BY DESIGN <span /> GROUNDED IN YOUR SOURCES <span /> BUILT TO SCALE</div>
+        </motion.section>
 
-        <ProductPreview />
+        <motion.section
+          className="ascii-stage"
+          initial={{ opacity: 0, scale: .97 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: .18, duration: 1.1, ease: EASE }}
+          aria-label="Live ASCII visualization of connected knowledge"
+        >
+          <div className="ascii-stage__topline">
+            <span><i /> LIVE KNOWLEDGE FIELD</span>
+            <span>SYS.NODE_001 <b>●</b> ACTIVE</span>
+          </div>
+          <div className="ascii-stage__visual">
+            <div className="ascii-stage__grid" />
+            <AsciiField />
+            <div className="ascii-stage__crosshair ascii-stage__crosshair--one">+</div>
+            <div className="ascii-stage__crosshair ascii-stage__crosshair--two">+</div>
+            <FloatingReadout className="ascii-readout--left" label="INPUT STREAM" value="1,284" detail="DOCUMENTS CONNECTED" />
+            <FloatingReadout className="ascii-readout--right" label="RETRIEVAL" value="98.4%" detail="SOURCE RELEVANCE" />
+            <div className="ascii-stage__core-label"><span>NK</span><i /> KNOWLEDGE GRAPH</div>
+            <div className="ascii-stage__coordinates">X 04.821&nbsp;&nbsp; Y 19.204&nbsp;&nbsp; Z 00.018</div>
+          </div>
+          <div className="ascii-stage__bottomline">
+            <span>01 <i /> INGEST</span><span>02 <i /> UNDERSTAND</span><span>03 <i /> RETRIEVE</span><span>04 <i /> RESPOND</span>
+          </div>
+        </motion.section>
       </main>
 
       <footer className="hero2-bottom" id="platform">
-        <div className="hero2-bottom__statement"><span className="hero2-bottom__dot" /> ONE KNOWLEDGE BASE. MANY WAYS TO USE IT.</div>
-        <div className="hero2-capabilities">
-          <span><FileText size={13} /> Your documents</span>
-          <i />
-          <span><Search size={13} /> Intelligent retrieval</span>
-          <i />
-          <span><ShieldCheck size={13} /> Verifiable answers</span>
-          <i />
-          <span><LockKeyhole size={13} /> Private by design</span>
-        </div>
+        <div className="hero2-bottom__left"><span>BUILT FOR KNOWLEDGE THAT MOVES.</span><b>NEURALKINETICS © 2026</b></div>
+        <div className="hero2-bottom__right" id="security"><span>SECURE BY DEFAULT</span><span>CONTEXT-AWARE RETRIEVAL</span><span>TRACEABLE ANSWERS</span><MoveUpRight size={13} /></div>
       </footer>
     </div>
   )
