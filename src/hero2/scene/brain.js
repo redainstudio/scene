@@ -182,7 +182,7 @@ export function buildNeurons() {
   const rnd = mulberry32(31)
   const nodes = []
   let guard = 0
-  while (nodes.length < 38 && guard++ < 4000) {
+  while (nodes.length < 46 && guard++ < 5200) {
     const x = -0.95 + rnd() * 1.9
     const y = -0.72 + rnd() * 1.2
     if (!inside(OUTLINE, x, y) || y > 0.42) continue
