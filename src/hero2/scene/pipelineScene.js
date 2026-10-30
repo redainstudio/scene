@@ -314,7 +314,7 @@ export class PipelineScene {
     const skin = g.createLinearGradient(C.x - R, C.y - R, C.x + R, C.y + R)
     skin.addColorStop(0, '#ffffff')
     skin.addColorStop(0.52, '#fdfcff')
-    skin.addColorStop(1, '#f0eeff')
+    skin.addColorStop(1, '#f0f0f1')
     g.fillStyle = skin
     g.fill()
     g.save()
