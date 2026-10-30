@@ -96,17 +96,17 @@ export class PipelineScene {
     this.W = W
     this.H = H
     this.dpr = dpr
-    const mobile = W < 650
+    const mobile = W < 540
     this.mobile = mobile
     let wps, R, C, lineY, cornerR
     const st = {}
 
     if (!mobile) {
-      const s = clamp(Math.min(W / 1180, H / 700), 0.94, 1.45)
+      const s = clamp(Math.min(W / 1000, H / 700), 0.98, 1.35)
       const u = 1.05 * s
-      R = 184 * s
-      const x0 = W * 0.04
-      const len = W * 0.92
+      R = 210 * s
+      const x0 = W * 0.015
+      const len = W * 0.97
       this.s = s
       this.u = u
       this.laneAmp = 66 * s
@@ -114,7 +114,7 @@ export class PipelineScene {
       this.ramp = 64 * s
       this.abstainAmp = this.laneAmp
       const hdr = Math.max(this.laneAmp + this.gateR + 44 * s, 0.85 * R + 46 * s)
-      lineY = Math.max(H * 0.44, 92 + hdr)
+      lineY = Math.max(H * 0.43, 92 + hdr)
       this.hdr = hdr
       // The rail now breathes around the brain instead of reading as one
       // perfectly straight conveyor: a raised ingestion approach and a
@@ -272,7 +272,7 @@ export class PipelineScene {
       let bx
       let by
       if (!this.mobile) {
-        by = this.lineY + this.laneAmp + this.gateR + 24 * s
+        by = Math.max(this.lineY + this.laneAmp + this.gateR + 24 * s, this.C.y + 0.96 * this.R + 25 * s)
         bx = p.x
       } else {
         by = i === 6 ? p.y + 64 * u : p.y
@@ -313,19 +313,19 @@ export class PipelineScene {
     outline()
     const skin = g.createLinearGradient(C.x - R, C.y - R, C.x + R, C.y + R)
     skin.addColorStop(0, '#ffffff')
-    skin.addColorStop(0.52, '#fdfcff')
+    skin.addColorStop(0.52, '#fafafa')
     skin.addColorStop(1, '#f0f0f1')
     g.fillStyle = skin
     g.fill()
     g.save()
     g.clip()
     const innerLight = g.createRadialGradient(C.x + R * 0.16, C.y - R * 0.2, R * 0.04, C.x, C.y, R * 1.12)
-    innerLight.addColorStop(0, 'rgba(117,105,255,0.10)')
-    innerLight.addColorStop(0.7, 'rgba(117,105,255,0.025)')
-    innerLight.addColorStop(1, 'rgba(117,105,255,0)')
+    innerLight.addColorStop(0, 'rgba(49,55,80,0.10)')
+    innerLight.addColorStop(0.7, 'rgba(49,55,80,0.025)')
+    innerLight.addColorStop(1, 'rgba(49,55,80,0)')
     g.fillStyle = innerLight
     g.fillRect(C.x - R * 1.1, C.y - R, R * 2.2, R * 2)
-    g.strokeStyle = 'rgba(77,72,139,0.25)'
+    g.strokeStyle = 'rgba(49,55,80,0.25)'
     g.lineWidth = Math.max(0.8, R * 0.0045)
     g.lineCap = 'round'
     g.lineJoin = 'round'
@@ -655,10 +655,6 @@ export class PipelineScene {
         ctx.stroke()
       }
     }
-    // brain label
-    ctx.textAlign = 'center'
-    ctx.fillStyle = 'rgba(49,55,80,0.68)'
-    ctx.fillText('YOUR KNOWLEDGE BASE', this.C.x, this.C.y - 0.86 * this.R - 16 * s)
   }
 
   brainPulse() {
@@ -1254,7 +1250,7 @@ export class PipelineScene {
     const bs = this.mobile ? 7.5 * s : 10.5 * s
     this.anchors.forEach((a, i) => {
       // guide tick (desktop)
-      if (!this.mobile && i !== 6) {
+      if (!this.mobile && i !== 6 && (i < 2 || i > 4)) {
         const top = i === 1 ? this.lineY + this.laneAmp + this.gateR + 6 : this.lineY + this.gateR + 6
         ctx.beginPath()
         ctx.moveTo(a.x, top)
