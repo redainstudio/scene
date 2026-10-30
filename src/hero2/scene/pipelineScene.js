@@ -102,41 +102,40 @@ export class PipelineScene {
     const st = {}
 
     if (!mobile) {
-      // Desktop uses a deliberate serpentine route: seven stages alternate
-      // between upper and lower lanes, with the brain as the processing hub.
-      const s = clamp(Math.min(W / 900, H / 650), 0.88, 1.16)
-      const u = 1.02 * s
-      R = 82 * s
-      C = { x: W * 0.52, y: H * 0.48 }
+      // Desktop: a true top-to-bottom serpentine pipeline.
+      // Stages alternate between left and right lanes around a compact brain hub.
+      const s = clamp(Math.min(W / 760, H / 650), 0.82, 1.05)
+      const u = 1.0 * s
+      R = 72 * s
+      C = { x: W * 0.5, y: H * 0.49 }
       lineY = C.y
       this.s = s
       this.u = u
-      this.laneAmp = 28 * s
-      this.gateR = 16 * u
-      this.ramp = 34 * s
-      this.abstainAmp = 27 * s
+      this.laneAmp = 18 * s
+      this.gateR = 14 * u
+      this.ramp = 30 * s
+      this.abstainAmp = 24 * s
       this.hdr = 0
 
-      const leftBrain = C.x - R * 1.05
-      const rightBrain = C.x + R * 1.05
-      const stage = (x, y) => [W * x, H * y]
+      const point = (x, y) => [W * x, H * y]
       wps = [
-        stage(0.035, 0.18),
-        stage(0.075, 0.18),
-        stage(0.20, 0.76),
-        stage(0.34, 0.18),
-        stage(0.46, 0.76),
-        [leftBrain, C.y],
-        [rightBrain, C.y],
-        stage(0.66, 0.18),
-        stage(0.79, 0.76),
-        stage(0.875, 0.39),
-        stage(0.91, 0.22),
+        point(0.23, 0.035),
+        point(0.23, 0.08),
+        point(0.77, 0.19),
+        point(0.23, 0.32),
+        point(0.37, 0.41),
+        point(0.50, 0.49),
+        point(0.63, 0.56),
+        point(0.77, 0.62),
+        point(0.23, 0.73),
+        point(0.77, 0.84),
+        point(0.50, 0.955),
+        point(0.50, 0.985),
       ]
-      cornerR = 34 * s
-      this.stubOff = -54 * s
+      cornerR = 30 * s
+      this.stubOff = -42 * s
       this.speed = 0
-      this.x0 = W * 0.035
+      this.x0 = W * 0.23
     } else {
       const m = clamp(W / 390, 0.8, 1.6)
       const u = clamp((0.55 * W) / 390, 0.5, 0.95)
@@ -181,18 +180,18 @@ export class PipelineScene {
     if (!mobile) {
       const at = (x, y) => this.dOf(W * x, H * y)
       Object.assign(st, {
-        upload: at(0.075, 0.18),
-        ext: at(0.20, 0.76),
-        chunk: at(0.34, 0.18),
-        embed: at(0.43, 0.62),
-        index: at(0.46, 0.76),
-        retrieve: at(0.66, 0.18),
-        rerank: at(0.84, 0.55),
-        verify: at(0.79, 0.76),
-        answer: at(0.875, 0.39),
-        widget: at(0.91, 0.22),
+        upload: at(0.23, 0.08),
+        ext: at(0.77, 0.19),
+        chunk: at(0.23, 0.32),
+        embed: at(0.63, 0.56),
+        index: at(0.77, 0.62),
+        retrieve: at(0.23, 0.73),
+        rerank: at(0.50, 0.785),
+        verify: at(0.77, 0.84),
+        answer: at(0.50, 0.91),
+        widget: at(0.50, 0.955),
       })
-      this.speed = this.len * 0.092
+      this.speed = this.len * 0.105
     }
 
     if (mobile) {
@@ -281,14 +280,13 @@ export class PipelineScene {
     if (!this.mobile) {
       this.anchors = this.stationD.map((d, i) => {
         const p = i === 6 ? this.widgetPos() : this.pos(d)
-        const upperLane = i % 2 === 0
-        let bx = p.x
-        let by = p.y + (upperLane ? 58 : -58) * s
-
-        // Keep the answer marker beside the answer card rather than on top of it.
+        // Put the step markers in alternating side rails. The actual route
+        // continues vertically between them, rather than reading left-to-right.
+        let bx = p.x < W * 0.5 ? W * 0.105 : W * 0.895
+        let by = p.y
         if (i === 6) {
-          bx = p.x - 70 * s
-          by = p.y + 12 * s
+          bx = W * 0.86
+          by = Math.min(H - 34 * s, p.y - 4 * s)
         }
         return { x: p.x, y: p.y, bx, by }
       })
