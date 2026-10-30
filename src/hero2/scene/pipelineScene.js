@@ -2,8 +2,8 @@ import { OUTLINE, getFolds, buildNeurons, mulberry32 } from './brain.js'
 import { FILE_TYPES, boxOf, drawFile, drawTextPage, drawChunkCard, drawRoundRect } from './icons.js'
 
 const TAU = Math.PI * 2
-const ACCENT = '#6258F5'
-const ACCENT_SOFT = '#F0EEFF'
+const ACCENT = '#303034'
+const ACCENT_SOFT = '#F0F0F1'
 const INDEX_INK = '#424753'
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v))
 const lerp = (a, b, t) => a + (b - a) * t
@@ -339,7 +339,7 @@ export class PipelineScene {
     g.lineWidth = Math.max(2.2, R * 0.010)
     g.lineJoin = 'round'
     g.strokeStyle = 'rgba(57,52,125,0.96)'
-    g.shadowColor = 'rgba(98,88,245,0.22)'
+    g.shadowColor = 'rgba(49,55,80,0.22)'
     g.shadowBlur = R * 0.045
     g.stroke()
     g.shadowBlur = 0
@@ -572,7 +572,7 @@ export class PipelineScene {
     } else {
       ctx.setLineDash([3, 9])
       ctx.lineDashOffset = -this.t * 16
-      ctx.strokeStyle = `rgba(98,88,245,${base * 0.55})`
+      ctx.strokeStyle = `rgba(49,55,80,${base * 0.55})`
     }
     ctx.stroke()
     ctx.setLineDash([])
@@ -593,8 +593,8 @@ export class PipelineScene {
     const signalD = (this.t * this.speed * 0.23) % this.len
     const signal = this.pos(signalD)
     const signalGlow = ctx.createRadialGradient(signal.x, signal.y, 0, signal.x, signal.y, 15 * this.u)
-    signalGlow.addColorStop(0, 'rgba(98,88,245,0.38)')
-    signalGlow.addColorStop(1, 'rgba(98,88,245,0)')
+    signalGlow.addColorStop(0, 'rgba(49,55,80,0.38)')
+    signalGlow.addColorStop(1, 'rgba(49,55,80,0)')
     ctx.fillStyle = signalGlow
     ctx.beginPath()
     ctx.arc(signal.x, signal.y, 15 * this.u, 0, TAU)
@@ -610,7 +610,7 @@ export class PipelineScene {
     ctx.moveTo(top.x, top.y)
     ctx.lineTo(bot.x, bot.y)
     ctx.setLineDash([2, 5])
-    ctx.strokeStyle = 'rgba(98,88,245,0.3)'
+    ctx.strokeStyle = 'rgba(49,55,80,0.3)'
     ctx.lineWidth = 1.1
     ctx.stroke()
     ctx.setLineDash([])
@@ -671,9 +671,9 @@ export class PipelineScene {
     const strength = Math.max(this.glow, this.brainPulse())
     const e = 0.015 + 0.13 * strength
     const g = ctx.createRadialGradient(C.x, C.y, R * 0.12, C.x, C.y, R * 1.62)
-    g.addColorStop(0, `rgba(98,88,245,${e * 0.52})`)
-    g.addColorStop(0.48, `rgba(98,88,245,${0.012 + strength * 0.04})`)
-    g.addColorStop(1, 'rgba(98,88,245,0)')
+    g.addColorStop(0, `rgba(49,55,80,${e * 0.52})`)
+    g.addColorStop(0.48, `rgba(49,55,80,${0.012 + strength * 0.04})`)
+    g.addColorStop(1, 'rgba(49,55,80,0)')
     ctx.fillStyle = g
     ctx.fillRect(C.x - R * 1.8, C.y - R * 1.7, R * 3.6, R * 3.4)
 
@@ -687,8 +687,8 @@ export class PipelineScene {
       ctx.setLineDash(i ? [2, 8] : [1, 6])
       ctx.lineDashOffset = -this.t * (i ? 8 : 13)
       ctx.strokeStyle = i
-        ? `rgba(98,88,245,${0.10 + strength * 0.09})`
-        : `rgba(98,88,245,${0.12 + strength * 0.12})`
+        ? `rgba(49,55,80,${0.10 + strength * 0.09})`
+        : `rgba(49,55,80,${0.12 + strength * 0.12})`
       ctx.lineWidth = i ? 1 : 1.2
       ctx.stroke()
     }
@@ -699,7 +699,7 @@ export class PipelineScene {
     ctx.beginPath()
     ctx.arc(ox, oy, 3.2 * u, 0, TAU)
     ctx.fillStyle = ACCENT
-    ctx.shadowColor = 'rgba(98,88,245,0.55)'
+    ctx.shadowColor = 'rgba(49,55,80,0.55)'
     ctx.shadowBlur = 12 * u
     ctx.fill()
     ctx.restore()
@@ -723,10 +723,10 @@ export class PipelineScene {
     ctx.lineJoin = 'round'
     ctx.lineCap = 'round'
 
-    // A soft violet aura sits just outside the brain contour.
-    ctx.strokeStyle = `rgba(98,88,245,${0.9 * strength})`
+    // A soft soft graphite aura sits just outside the brain contour.
+    ctx.strokeStyle = `rgba(49,55,80,${0.9 * strength})`
     ctx.lineWidth = 1.55
-    ctx.shadowColor = `rgba(98,88,245,${0.95 * strength})`
+    ctx.shadowColor = `rgba(49,55,80,${0.95 * strength})`
     ctx.shadowBlur = this.R * 0.16 * strength
     ctx.stroke()
 
@@ -734,9 +734,9 @@ export class PipelineScene {
     const trace = Math.min(perimeter * 0.16, this.R * 0.72)
     ctx.setLineDash([trace, Math.max(1, perimeter - trace)])
     ctx.lineDashOffset = -((this.t * this.R * 1.9) % perimeter)
-    ctx.strokeStyle = `rgba(151,140,255,${0.98 * strength})`
+    ctx.strokeStyle = `rgba(49,55,80,${0.98 * strength})`
     ctx.lineWidth = 2.5
-    ctx.shadowColor = `rgba(98,88,245,${strength})`
+    ctx.shadowColor = `rgba(49,55,80,${strength})`
     ctx.shadowBlur = this.R * 0.2 * strength
     ctx.stroke()
     ctx.setLineDash([])
@@ -798,7 +798,7 @@ export class PipelineScene {
     ctx.save()
     drawRoundRect(ctx, x, y, w, h, 8 * k)
     ctx.fillStyle = '#fff'
-    ctx.shadowColor = 'rgba(98,88,245,0.14)'
+    ctx.shadowColor = 'rgba(49,55,80,0.14)'
     ctx.shadowBlur = 22 * k
     ctx.shadowOffsetY = 7 * k
     ctx.fill()
@@ -841,7 +841,7 @@ export class PipelineScene {
 
     // Source-backed answer
     drawRoundRect(ctx, x + 8 * k, y + 49 * k, w - 16 * k, 34 * k, 6 * k)
-    ctx.fillStyle = 'rgba(98,88,245,0.055)'
+    ctx.fillStyle = 'rgba(49,55,80,0.055)'
     ctx.fill()
     ctx.font = `600 ${font}px ${SANS}`
     ctx.fillStyle = 'rgba(35,39,62,0.84)'
@@ -961,8 +961,8 @@ export class PipelineScene {
         ctx.restore()
         if (wipe < 0.999) {
           const g = ctx.createLinearGradient(fx - 8, 0, fx, 0)
-          g.addColorStop(0, 'rgba(98,88,245,0)')
-          g.addColorStop(1, 'rgba(98,88,245,0.2)')
+          g.addColorStop(0, 'rgba(49,55,80,0)')
+          g.addColorStop(1, 'rgba(49,55,80,0.2)')
           ctx.fillStyle = g
           ctx.fillRect(fx - 8, -f.h / 2 - 5, 8, f.h + 10)
           ctx.beginPath()
@@ -1002,7 +1002,7 @@ export class PipelineScene {
       ctx.globalAlpha = vec
       // Passage vectors emerge as the excerpts reach indexing.
       const dots = [[-10, -5], [0, -5], [10, -5], [-10, 5], [0, 5], [10, 5]]
-      ctx.strokeStyle = 'rgba(98,88,245,0.58)'
+      ctx.strokeStyle = 'rgba(49,55,80,0.58)'
       ctx.globalAlpha = vec * 0.8
       ctx.lineWidth = 1
       for (let row = 0; row < 2; row++) {
@@ -1241,7 +1241,7 @@ export class PipelineScene {
       ctx.arc(p.x, p.y, r, 0, TAU)
       const alpha = (p.kind === 'node' || p.kind === 'entry' || p.kind === 'abstain' ? 0.36 : 0.5) * (1 - k)
       ctx.strokeStyle = p.kind === 'widget'
-        ? `rgba(98,88,245,${alpha})`
+        ? `rgba(49,55,80,${alpha})`
         : `rgba(49,55,80,${alpha})`
       ctx.lineWidth = 1.1
       ctx.stroke()
