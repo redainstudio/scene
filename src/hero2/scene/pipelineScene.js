@@ -296,12 +296,22 @@ export class PipelineScene {
       g.closePath()
     }
     outline()
-    g.fillStyle = '#ffffff'
+    const skin = g.createLinearGradient(C.x - R, C.y - R, C.x + R, C.y + R)
+    skin.addColorStop(0, '#ffffff')
+    skin.addColorStop(0.52, '#fdfcff')
+    skin.addColorStop(1, '#f0eeff')
+    g.fillStyle = skin
     g.fill()
     g.save()
     g.clip()
-    g.strokeStyle = 'rgba(49,55,80,0.32)'
-    g.lineWidth = Math.max(0.7, R * 0.0042)
+    const innerLight = g.createRadialGradient(C.x + R * 0.16, C.y - R * 0.2, R * 0.04, C.x, C.y, R * 1.12)
+    innerLight.addColorStop(0, 'rgba(117,105,255,0.10)')
+    innerLight.addColorStop(0.7, 'rgba(117,105,255,0.025)')
+    innerLight.addColorStop(1, 'rgba(117,105,255,0)')
+    g.fillStyle = innerLight
+    g.fillRect(C.x - R * 1.1, C.y - R, R * 2.2, R * 2)
+    g.strokeStyle = 'rgba(77,72,139,0.25)'
+    g.lineWidth = Math.max(0.8, R * 0.0045)
     g.lineCap = 'round'
     g.lineJoin = 'round'
     for (const c of getFolds(this.mobile ? 1 : 0)) {
@@ -311,10 +321,23 @@ export class PipelineScene {
     }
     g.restore()
     outline()
-    g.lineWidth = Math.max(1.4, R * 0.007)
+    g.lineWidth = Math.max(2.2, R * 0.010)
     g.lineJoin = 'round'
-    g.strokeStyle = '#000'
+    g.strokeStyle = 'rgba(57,52,125,0.96)'
+    g.shadowColor = 'rgba(98,88,245,0.22)'
+    g.shadowBlur = R * 0.045
     g.stroke()
+    g.shadowBlur = 0
+    // Fine inner contour gives the cortex a layered, engraved finish.
+    g.save()
+    g.translate(C.x, C.y)
+    g.scale(0.972, 0.972)
+    g.translate(-C.x, -C.y)
+    outline()
+    g.lineWidth = Math.max(0.8, R * 0.003)
+    g.strokeStyle = 'rgba(137,128,220,0.22)'
+    g.stroke()
+    g.restore()
     this.brainImg = { cv, x: x0, y: y0, w, h }
   }
 
@@ -547,9 +570,24 @@ export class PipelineScene {
       [st.verify - 6, st.answer, (d) => this.abstainOff(d)],
     ]
     for (const [a, b, f] of lines) {
-      this.strokeAlong(ctx, a, b, f, 0.12, false)
-      this.strokeAlong(ctx, a, b, f, 0.55, true)
+      this.strokeAlong(ctx, a, b, f, 0.075, false)
+      this.strokeAlong(ctx, a, b, f, 0.72, true)
     }
+    // A travelling signal makes the main knowledge rail feel energized,
+    // while keeping the original hand-drawn pipeline language.
+    const signalD = (this.t * this.speed * 0.23) % this.len
+    const signal = this.pos(signalD)
+    const signalGlow = ctx.createRadialGradient(signal.x, signal.y, 0, signal.x, signal.y, 15 * this.u)
+    signalGlow.addColorStop(0, 'rgba(98,88,245,0.38)')
+    signalGlow.addColorStop(1, 'rgba(98,88,245,0)')
+    ctx.fillStyle = signalGlow
+    ctx.beginPath()
+    ctx.arc(signal.x, signal.y, 15 * this.u, 0, TAU)
+    ctx.fill()
+    ctx.beginPath()
+    ctx.arc(signal.x, signal.y, 2.2 * this.u, 0, TAU)
+    ctx.fillStyle = ACCENT
+    ctx.fill()
     // visitor-question stub
     const top = this.pos(st.retrieve, this.stubOff)
     const bot = this.pos(st.retrieve, 0)
@@ -852,6 +890,19 @@ export class PipelineScene {
       const fx = f.w / 2 - wipe * f.w
       const a = Math.max(0.0001, appear)
       if (wipe < 0.999) {
+        // Offset ghost sheets imply a real document stack entering the system.
+        for (let sheet = 2; sheet >= 1; sheet--) {
+          ctx.save()
+          ctx.translate(-sheet * 2.2, -sheet * 1.7)
+          ctx.globalAlpha = a * (0.16 + sheet * 0.06)
+          ctx.fillStyle = '#f4f2ff'
+          drawRoundRect(ctx, -f.w / 2, -f.h / 2, f.w, f.h, 2.5)
+          ctx.fill()
+          ctx.strokeStyle = 'rgba(83,76,165,0.42)'
+          ctx.lineWidth = 1
+          ctx.stroke()
+          ctx.restore()
+        }
         ctx.save()
         ctx.beginPath()
         ctx.rect(-f.w, -f.h, fx + f.w, f.h * 2)
@@ -908,19 +959,33 @@ export class PipelineScene {
       drawChunkCard(ctx, 1, cw, ch)
       ctx.globalAlpha = vec
       // Passage vectors emerge as the excerpts reach indexing.
-      const dots = [[-9, -4], [0, -4], [9, -4], [-9, 5], [0, 5], [9, 5]]
-      ctx.beginPath()
-      dots.forEach(([x, y], i) => i ? ctx.lineTo(x, y) : ctx.moveTo(x, y))
-      ctx.strokeStyle = INDEX_INK
-      ctx.globalAlpha = vec * 0.48
-      ctx.lineWidth = 1.25
-      ctx.stroke()
-      for (const [x, y] of dots) {
+      const dots = [[-10, -5], [0, -5], [10, -5], [-10, 5], [0, 5], [10, 5]]
+      ctx.strokeStyle = 'rgba(98,88,245,0.58)'
+      ctx.globalAlpha = vec * 0.8
+      ctx.lineWidth = 1
+      for (let row = 0; row < 2; row++) {
         ctx.beginPath()
-        ctx.arc(x, y, 2.2, 0, TAU)
-        ctx.fillStyle = INDEX_INK
-        ctx.globalAlpha = vec
+        ctx.moveTo(-10, row ? 5 : -5)
+        ctx.lineTo(10, row ? 5 : -5)
+        ctx.stroke()
+      }
+      ctx.beginPath()
+      ctx.moveTo(-10, -5)
+      ctx.lineTo(-10, 5)
+      ctx.moveTo(0, -5)
+      ctx.lineTo(0, 5)
+      ctx.moveTo(10, -5)
+      ctx.lineTo(10, 5)
+      ctx.stroke()
+      for (let i = 0; i < dots.length; i++) {
+        const [x, y] = dots[i]
+        ctx.beginPath()
+        ctx.arc(x, y, 2.4, 0, TAU)
+        ctx.fillStyle = i === 2 || i === 3 ? ACCENT : '#fff'
         ctx.fill()
+        ctx.strokeStyle = 'rgba(76,69,160,0.75)'
+        ctx.lineWidth = 0.9
+        ctx.stroke()
       }
       ctx.restore()
     }
