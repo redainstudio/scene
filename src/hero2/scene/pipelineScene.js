@@ -1248,20 +1248,25 @@ export class PipelineScene {
   drawLabels(ctx) {
     const { s } = this
     const full = this.labelMode === 'full'
-    const bs = this.mobile ? 7.5 * s : 10.5 * s
+    const bs = this.mobile ? 7.5 * s : 9.5 * s
+    const stepNotes = ['FILES IN', 'TEXT EXTRACT', 'SMART CHUNKS', 'VECTOR INDEX', 'HYBRID SEARCH', 'SOURCE CHECK', 'CITED RESPONSE']
+
     this.anchors.forEach((a, i) => {
-      // guide tick (desktop)
-      if (!this.mobile && i !== 6 && (i < 2 || i > 4)) {
-        const top = i === 1 ? this.lineY + this.laneAmp + this.gateR + 6 : this.lineY + this.gateR + 6
+      // Alternating guide stems make the process read as a clear zig-zag.
+      if (!this.mobile) {
+        const above = a.by < this.lineY
+        const startY = above ? this.lineY - this.gateR - 5 : this.lineY + this.gateR + 5
+        const endY = above ? a.by + bs + 5 : a.by - bs - 5
         ctx.beginPath()
-        ctx.moveTo(a.x, top)
-        ctx.lineTo(a.x, a.by - bs - 4)
-        ctx.setLineDash([1.5, 3.5])
-        ctx.strokeStyle = 'rgba(0,0,0,0.2)'
+        ctx.moveTo(a.x, startY)
+        ctx.lineTo(a.x, endY)
+        ctx.setLineDash([2, 5])
+        ctx.strokeStyle = 'rgba(35,35,39,0.22)'
         ctx.lineWidth = 1
         ctx.stroke()
         ctx.setLineDash([])
       }
+
       ctx.beginPath()
       ctx.arc(a.bx, a.by, bs, 0, TAU)
       ctx.fillStyle = '#fff'
@@ -1269,23 +1274,25 @@ export class PipelineScene {
       ctx.strokeStyle = 'rgba(0,0,0,0.55)'
       ctx.lineWidth = 1.1
       ctx.stroke()
+
       ctx.font = `600 ${(this.mobile ? 8 : 10.5) * s}px ${SANS}`
       ctx.textAlign = 'center'
       ctx.textBaseline = 'middle'
       ctx.fillStyle = '#000'
       ctx.fillText(String(i + 1), a.bx, a.by + 0.5)
+
       if (full) {
         ctx.font = `650 ${Math.max(10, 10.5 * s)}px ${SANS}`
-        ctx.fillStyle = 'rgba(20,20,23,0.88)'
+        ctx.fillStyle = 'rgba(20,20,23,0.9)'
         ctx.fillText(STEPS[i].title, a.bx, a.by + bs + 15 * s)
         if (!this.mobile) {
           ctx.font = `500 ${Math.max(7.5, 7.8 * s)}px ${SANS}`
-          ctx.fillStyle = 'rgba(90,90,96,0.72)'
+          ctx.fillStyle = 'rgba(90,90,96,0.76)'
           ctx.fillText(stepNotes[i], a.bx, a.by + bs + 28 * s)
         }
       }
     })
-    // brain label (mobile)
+
     if (this.mobile) {
       ctx.font = `500 ${10 * s}px ${SANS}`
       ctx.textAlign = 'center'
@@ -1293,5 +1300,4 @@ export class PipelineScene {
       ctx.fillText('Knowledge base', this.C.x, this.C.y + 0.9 * this.R + 14)
     }
   }
-
 }
