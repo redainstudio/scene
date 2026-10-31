@@ -2,7 +2,6 @@ import './index.css'
 import './hero3/hero3.css'
 import { AiBotAvatar } from './hero3/AiBotAvatar'
 
-
 export default function Hero3() {
   return (
     <main
@@ -23,19 +22,7 @@ export default function Hero3() {
           position: relative;
           z-index: 2;
         }
-        @keyframes hero3-hand-rise {
-          from { transform: translateY(125px); }
-          to { transform: translateY(0); }
-        }
-        @keyframes hero3-hand-hover {
-          0%, 100% { transform: translateY(0); }
-          50% { transform: translateY(-4px); }
-        }
-        @media (prefers-reduced-motion: reduce) {
-          .hero3-hand__rise { animation: none !important; }
-        }
       `}</style>
-
 
       <AiBotAvatar
         className="hero3-empty__avatar"
