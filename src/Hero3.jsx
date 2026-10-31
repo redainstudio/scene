@@ -14,12 +14,12 @@ export default function Hero3() {
         alignItems: 'center',
         justifyContent: 'center',
         overflow: 'hidden',
-        backgroundColor: '#16a34a',
+        backgroundColor: '#ffffff',
       }}
     >
       <AiBotAvatar
         className="hero3-empty__avatar"
-        size={60}
+        size={112}
         emotion="happy"
         activity="idle"
         lookAround
