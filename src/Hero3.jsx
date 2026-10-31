@@ -7,7 +7,7 @@ export default function Hero3() {
     <main className="hero3-empty" aria-label="AI bot hero">
       <AiBotAvatar
         className="hero3-empty__avatar"
-        size={240}
+        size={112}
         emotion="happy"
         activity="idle"
         lookAround
