@@ -37,11 +37,14 @@ export default function Hero3() {
           draggable="false"
           style={{
             position: 'absolute',
-            inset: 0,
+            left: '50%',
+            bottom: 0,
             display: 'block',
-            width: '100%',
+            width: 'auto',
             height: '100%',
+            maxWidth: 'none',
             objectFit: 'contain',
+            transform: 'translateX(-50%)',
             pointerEvents: 'none',
             userSelect: 'none',
           }}
