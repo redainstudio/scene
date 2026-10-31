@@ -9,6 +9,8 @@ export {
 
 export interface AiBotAvatarProps extends AiBotOptions {
   colors?: readonly [string, string];
+  outline?: string;
+  outlineWidth?: number;
   size?: number;
   label?: string;
   className?: string;
@@ -17,6 +19,8 @@ export interface AiBotAvatarProps extends AiBotOptions {
 
 export function AiBotAvatar({
   colors,
+  outline,
+  outlineWidth = 0,
   size = 112,
   label = "AI assistant",
   className,
@@ -150,6 +154,9 @@ export function AiBotAvatar({
               ref={bodyRef}
               d={AI_BOT_SVG.body}
               fill={`url(#${gradId}) #3478f6`}
+              stroke={outline}
+              strokeWidth={outlineWidth}
+              strokeLinejoin="round"
             />
           </g>
 
