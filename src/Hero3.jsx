@@ -19,7 +19,7 @@ export default function Hero3() {
     >
       <AiBotAvatar
         className="hero3-empty__avatar"
-        size={112}
+        size={60}
         emotion="happy"
         activity="idle"
         lookAround
