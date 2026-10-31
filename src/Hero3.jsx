@@ -54,7 +54,7 @@ export default function Hero3() {
           size={240}
           colors={['#ffffff', '#ffffff']}
           outline="#101010"
-          outlineWidth={0.8}
+          outlineWidth={0.18}
           emotion="happy"
           activity="idle"
           lookAround
