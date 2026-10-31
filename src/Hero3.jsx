@@ -6,78 +6,80 @@ function GrabbingHand() {
   return (
     <svg
       className="hero3-hand"
-      viewBox="0 0 400 560"
+      viewBox="0 0 440 520"
       role="presentation"
       aria-hidden="true"
     >
       <defs>
-        <linearGradient id="hero3-skin" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stopColor="#f7c9a8" />
-          <stop offset=".48" stopColor="#e9a77f" />
-          <stop offset="1" stopColor="#c97958" />
-        </linearGradient>
-        <linearGradient id="hero3-finger" x1="0" y1="0" x2="1" y2=".8">
-          <stop offset="0" stopColor="#ffdec4" />
-          <stop offset=".52" stopColor="#edb18d" />
-          <stop offset="1" stopColor="#c97958" />
-        </linearGradient>
-        <linearGradient id="hero3-palm" x1=".1" y1="0" x2=".9" y2="1">
-          <stop offset="0" stopColor="#f8c8a7" />
-          <stop offset=".58" stopColor="#e5a17b" />
-          <stop offset="1" stopColor="#c87858" />
-        </linearGradient>
-        <filter id="hero3-hand-shadow" x="-35%" y="-25%" width="170%" height="170%">
-          <feGaussianBlur stdDeviation="9" />
+        <filter id="hero3-hand-glow" x="-35%" y="-35%" width="170%" height="170%">
+          <feGaussianBlur stdDeviation="5" />
         </filter>
+        <linearGradient id="hero3-hand-fill" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stopColor="#ffffff" />
+          <stop offset="1" stopColor="#fbfaff" />
+        </linearGradient>
       </defs>
 
-      <ellipse cx="204" cy="492" rx="118" ry="25" fill="#172033" opacity=".13" filter="url(#hero3-hand-shadow)" />
+      {/* Soft halo, matching the brain illustration on the home page */}
+      <path
+        d="M127 520 C124 464 110 416 91 371 C72 326 68 291 84 261 C96 239 119 231 139 244 C157 256 170 282 182 305 C172 267 164 225 164 186 C164 158 181 141 201 144 C222 147 231 167 230 194 C229 232 238 266 247 295 C246 252 246 205 259 170 C268 145 291 136 310 148 C329 160 329 183 323 211 C316 246 313 278 315 307 C324 281 337 258 358 255 C380 252 396 270 390 295 C382 334 357 370 340 405 C323 442 317 481 319 520 Z"
+        fill="none"
+        stroke="#8d88d6"
+        strokeWidth="9"
+        opacity=".2"
+        filter="url(#hero3-hand-glow)"
+      />
 
       <g className="hero3-hand__rise">
-        {/* Wrist and palm */}
+        {/* One continuous, softly irregular hand silhouette */}
         <path
-          d="M145 548 C147 493 138 453 123 411 C104 359 103 315 119 273 C132 239 161 224 198 224 C242 224 273 244 286 280 C302 325 293 374 278 414 C265 451 254 495 258 548 Z"
-          fill="url(#hero3-palm)"
-          stroke="#bd795d"
-          strokeOpacity=".34"
-          strokeWidth="3"
+          className="hero3-hand__outline"
+          d="M127 520 C124 464 110 416 91 371 C72 326 68 291 84 261 C96 239 119 231 139 244 C157 256 170 282 182 305 C172 267 164 225 164 186 C164 158 181 141 201 144 C222 147 231 167 230 194 C229 232 238 266 247 295 C246 252 246 205 259 170 C268 145 291 136 310 148 C329 160 329 183 323 211 C316 246 313 278 315 307 C324 281 337 258 358 255 C380 252 396 270 390 295 C382 334 357 370 340 405 C323 442 317 481 319 520 Z"
+          fill="url(#hero3-hand-fill)"
+          stroke="#514b9b"
+          strokeWidth="2.1"
+          strokeLinejoin="round"
         />
 
-        {/* Little finger */}
-        <path
-          className="hero3-hand__finger hero3-hand__finger--little"
-          d="M269 320 C291 300 305 272 310 244 C314 222 331 210 346 219 C361 228 357 249 349 272 C340 302 323 331 296 352"
-          fill="url(#hero3-finger)" stroke="#bd795d" strokeOpacity=".4" strokeWidth="3"
-        />
-        {/* Ring finger */}
-        <path
-          className="hero3-hand__finger hero3-hand__finger--ring"
-          d="M235 286 C251 253 258 218 255 183 C253 159 267 143 285 148 C303 153 305 174 301 199 C297 238 285 278 266 311"
-          fill="url(#hero3-finger)" stroke="#bd795d" strokeOpacity=".4" strokeWidth="3"
-        />
-        {/* Middle finger */}
-        <path
-          className="hero3-hand__finger hero3-hand__finger--middle"
-          d="M190 274 C198 237 199 196 190 161 C184 137 195 119 214 118 C233 117 242 136 241 160 C241 202 237 247 225 286"
-          fill="url(#hero3-finger)" stroke="#bd795d" strokeOpacity=".4" strokeWidth="3"
-        />
-        {/* Index finger */}
-        <path
-          className="hero3-hand__finger hero3-hand__finger--index"
-          d="M148 291 C143 255 130 222 110 195 C96 176 100 155 117 146 C134 137 151 151 162 172 C183 208 194 245 194 282"
-          fill="url(#hero3-finger)" stroke="#bd795d" strokeOpacity=".4" strokeWidth="3"
-        />
-        {/* Thumb curls inward to meet the fingers */}
-        <path
-          className="hero3-hand__finger hero3-hand__finger--thumb"
-          d="M126 350 C95 333 69 310 53 282 C40 260 47 240 65 234 C82 228 96 244 107 262 C120 283 142 296 164 302"
-          fill="url(#hero3-finger)" stroke="#bd795d" strokeOpacity=".4" strokeWidth="3"
-        />
+        {/* Pinching thumb and index finger contours */}
+        <path d="M84 262 C108 286 128 312 151 338 C165 354 184 363 205 358" />
+        <path d="M139 244 C157 266 173 295 187 324 C195 341 207 351 222 351" />
+        <path d="M230 194 C231 237 244 278 259 315 C267 334 281 343 299 338" />
+        <path d="M323 211 C316 249 315 285 319 319 C321 339 312 352 294 358" />
 
-        {/* Palm highlights and natural crease details */}
-        <path d="M143 350 C166 372 211 382 251 354" fill="none" stroke="#b96f53" strokeOpacity=".38" strokeWidth="5" strokeLinecap="round" />
-        <path d="M158 407 C183 422 218 423 242 407" fill="none" stroke="#fff0e2" strokeOpacity=".38" strokeWidth="4" strokeLinecap="round" />
-        <path d="M122 270 C137 291 150 305 166 313" fill="none" stroke="#fff0e2" strokeOpacity=".42" strokeWidth="5" strokeLinecap="round" />
+        {/* Delicate anatomical folds, drawn like the brain's inner grooves */}
+        <path d="M145 390 C165 412 188 421 213 416 C230 412 244 402 254 388" />
+        <path d="M124 426 C148 449 177 459 205 453" />
+        <path d="M229 449 C252 438 271 418 280 394" />
+        <path d="M177 305 C187 321 196 333 211 340" />
+        <path d="M247 295 C260 312 275 322 294 324" />
+        <path d="M94 315 C105 343 117 361 137 378" />
+        <path d="M351 318 C340 344 328 362 309 379" />
+        <path d="M182 186 C187 173 199 166 210 172" />
+        <path d="M275 184 C285 169 302 168 310 180" />
+
+        {/* Fine sketch marks and small organic details */}
+        <path d="M113 278 C124 286 131 298 135 310" />
+        <path d="M176 222 C181 240 184 256 184 272" />
+        <path d="M207 376 C218 380 229 379 239 373" />
+        <path d="M268 238 C272 255 278 270 288 282" />
+        <path d="M350 284 C358 292 359 305 355 317" />
+        <path d="M157 468 C174 478 192 482 211 480" />
+        <path d="M238 475 C258 466 273 453 283 436" />
+        <path d="M145 350 C151 357 158 363 166 367" />
+        <path d="M294 359 C302 353 309 347 314 338" />
+
+        {/* Tiny ink-like nodes echo the brain's fine details */}
+        <g className="hero3-hand__dots">
+          <circle cx="105" cy="296" r="1.5" />
+          <circle cx="171" cy="202" r="1.4" />
+          <circle cx="218" cy="228" r="1.3" />
+          <circle cx="279" cy="204" r="1.5" />
+          <circle cx="357" cy="339" r="1.4" />
+          <circle cx="161" cy="403" r="1.4" />
+          <circle cx="265" cy="424" r="1.4" />
+          <circle cx="207" cy="458" r="1.2" />
+        </g>
       </g>
     </svg>
   )
@@ -103,8 +105,8 @@ export default function Hero3() {
           position: absolute;
           z-index: 1;
           left: 50%;
-          bottom: -78px;
-          width: clamp(260px, 36vw, 430px);
+          bottom: -150px;
+          width: clamp(300px, 39vw, 480px);
           height: auto;
           overflow: visible;
           transform: translateX(-50%);
@@ -113,39 +115,43 @@ export default function Hero3() {
         .hero3-hand__rise {
           transform-box: fill-box;
           transform-origin: 50% 100%;
-          animation: hero3-hand-rise 1.55s cubic-bezier(.2,.8,.2,1) both, hero3-hand-hover 4.8s ease-in-out 1.55s infinite;
+          animation: hero3-hand-rise 1.65s cubic-bezier(.2,.8,.2,1) both,
+                     hero3-hand-hover 5s ease-in-out 1.65s infinite;
         }
-        .hero3-hand__finger {
-          transform-box: fill-box;
-          transform-origin: 50% 100%;
+        .hero3-hand__outline {
+          fill: url(#hero3-hand-fill);
         }
-        .hero3-hand__finger--index { animation: hero3-finger-close 1.1s ease-out 1s both; }
-        .hero3-hand__finger--middle { animation: hero3-finger-close 1.1s ease-out 1.08s both; }
-        .hero3-hand__finger--ring { animation: hero3-finger-close 1.1s ease-out 1.16s both; }
-        .hero3-hand__finger--little { animation: hero3-finger-close 1.1s ease-out 1.24s both; }
-        .hero3-hand__finger--thumb { animation: hero3-thumb-close 1.1s ease-out 1.12s both; }
-        .hero3-empty__avatar { position: relative; z-index: 2; }
+        .hero3-hand__rise > path:not(.hero3-hand__outline) {
+          fill: none;
+          stroke: #d5d2e9;
+          stroke-width: 1.45;
+          stroke-linecap: round;
+          stroke-linejoin: round;
+        }
+        .hero3-hand__dots {
+          fill: #aaa6ce;
+          opacity: .8;
+        }
+        .hero3-empty__avatar {
+          position: relative;
+          z-index: 2;
+        }
         @keyframes hero3-hand-rise {
-          from { transform: translateY(145px); }
+          from { transform: translateY(125px); }
           to { transform: translateY(0); }
         }
         @keyframes hero3-hand-hover {
           0%, 100% { transform: translateY(0); }
-          50% { transform: translateY(-5px); }
-        }
-        @keyframes hero3-finger-close {
-          from { rotate: 0deg; }
-          to { rotate: -7deg; }
-        }
-        @keyframes hero3-thumb-close {
-          from { rotate: 0deg; }
-          to { rotate: 10deg; }
+          50% { transform: translateY(-4px); }
         }
         @media (prefers-reduced-motion: reduce) {
-          .hero3-hand__rise, .hero3-hand__finger { animation: none !important; }
+          .hero3-hand__rise { animation: none !important; }
         }
         @media (max-width: 600px) {
-          .hero3-hand { width: min(82vw, 340px); bottom: -55px; }
+          .hero3-hand {
+            width: min(94vw, 390px);
+            bottom: -125px;
+          }
         }
       `}</style>
 
