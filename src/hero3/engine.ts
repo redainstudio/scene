@@ -14,7 +14,7 @@ export type AiBotEmotion =
   | "wink";
 export type AiBotMotion = "jump" | "spin" | "bounce" | "wiggle" | "float";
 export type AiBotActivity = "idle" | "speaking" | "listening";
-export type AiBotShape = "pebble" | "circle" | "squircle" | "flower" | "blob" | "plate";
+export type AiBotShape = "pebble" | "circle" | "squircle" | "flower" | "blob";
 
 export const AI_BOT_EMOTIONS: AiBotEmotion[] = [
   "neutral",
@@ -28,7 +28,7 @@ export const AI_BOT_EMOTIONS: AiBotEmotion[] = [
   "sleepy",
 ];
 export const AI_BOT_MOTIONS: AiBotMotion[] = ["jump", "spin", "bounce", "float", "wiggle"];
-export const AI_BOT_SHAPES: AiBotShape[] = ["pebble", "circle", "squircle", "flower", "blob", "plate"];
+export const AI_BOT_SHAPES: AiBotShape[] = ["pebble", "circle", "squircle", "flower", "blob"];
 
 /* ---------------------------------------------------------------- *
  * Geometry (body in viewBox -16 -16 32 32)
@@ -74,14 +74,6 @@ function radius(shape: AiBotShape, th: number, t: number, level: number) {
       const x = Math.abs(c(th));
       const y = Math.abs(Math.sin(th));
       return 0.9 / (x ** 4 + y ** 4) ** 0.25 + (0.008 + level * 0.02) * c(4 * th + t * 0.6);
-    }
-    case "plate": {
-      const sides = 10;
-      const sector = (Math.PI * 2) / sides;
-      const offset = ((th + sector / 2) % sector + sector) % sector - sector / 2;
-      const polygon = Math.cos(Math.PI / sides) / Math.cos(offset);
-      // Blend the polygon with a circle so the armor corners stay softly rounded.
-      return 0.72 * polygon + 0.28 + (0.004 + level * 0.004) * c(5 * th + t * 0.18);
     }
     case "flower":
       return 0.95 + (0.075 + level * 0.03) * c(8 * th) + 0.012 * c(3 * th + t * 0.6);
@@ -964,7 +956,7 @@ export function createAiBot(els: AiBotElements, options: AiBotOptions = {}): AiB
 
     // Body.
     const wob = cur.wobble + level * 0.6 + tickle * 0.25;
-    const snap = shapeNow === "plate" ? 36 : shapeNow === "squircle" ? 90 : shapeNow === "blob" ? 120 : shapeNow === "pebble" ? 72 : 0;
+    const snap = shapeNow === "squircle" ? 90 : shapeNow === "blob" ? 120 : shapeNow === "pebble" ? 72 : 0;
     const rate = snap ? 0 : 3.5 + level * 18;
     spin = reduce ? spin : (spin + dt * rate * cur.spin) % 360;
     if (snap) spin += (Math.round(spin / snap) * snap - spin) * Math.min(1, dt * 4);
