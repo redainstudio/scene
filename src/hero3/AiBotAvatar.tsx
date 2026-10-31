@@ -127,6 +127,9 @@ export function AiBotAvatar({
           <filter id={`${gradId}-blush`} x="-100%" y="-100%" width="300%" height="300%">
             <feGaussianBlur stdDeviation="0.55" />
           </filter>
+          <filter id={`${gradId}-body-shadow`} x="-35%" y="-35%" width="170%" height="180%" colorInterpolationFilters="sRGB">
+            <feDropShadow dx="0" dy="1.5" stdDeviation="1.25" floodColor="#000000" floodOpacity="0.24" />
+          </filter>
         </defs>
 
         <ellipse
@@ -157,6 +160,7 @@ export function AiBotAvatar({
               stroke={outline}
               strokeWidth={outlineWidth}
               strokeLinejoin="round"
+              filter={`url(#${gradId}-body-shadow)`}
             />
           </g>
 
