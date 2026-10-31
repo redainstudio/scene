@@ -35,22 +35,18 @@ function badge(ctx, label, a) {
   const h = 9
   const x = -w / 2
   const y = DOC_H / 2 - 14
-  const r = 2.5
+  const r = 4.5
   ctx.beginPath()
   ctx.moveTo(x + r, y)
-  ctx.lineTo(x + w - r, y)
-  ctx.arcTo(x + w, y, x + w, y + r, r)
-  ctx.lineTo(x + w, y + h - r)
-  ctx.arcTo(x + w, y + h, x + w - r, y + h, r)
-  ctx.lineTo(x + r, y + h)
-  ctx.arcTo(x, y + h, x, y + h - r, r)
-  ctx.lineTo(x, y + r)
-  ctx.arcTo(x, y, x + r, y, r)
+  ctx.arcTo(x + w, y, x + w, y + h, r)
+  ctx.arcTo(x + w, y + h, x, y + h, r)
+  ctx.arcTo(x, y + h, x, y, r)
+  ctx.arcTo(x, y, x + w, y, r)
   ctx.closePath()
-  ctx.fillStyle = `rgba(0,0,0,${a})`
+  ctx.fillStyle = `rgba(49,55,80,${0.13 * a})`
   ctx.fill()
-  ctx.fillStyle = `rgba(255,255,255,${a})`
-  ctx.font = `700 6.2px ${SANS}`
+  ctx.fillStyle = `rgba(80,72,190,${0.95 * a})`
+  ctx.font = `700 6.1px ${SANS}`
   ctx.textAlign = 'center'
   ctx.textBaseline = 'middle'
   ctx.fillText(label, 0, y + h / 2 + 0.4)
@@ -60,62 +56,79 @@ function line(ctx, x1, y1, x2, y2, a, w = 1.2) {
   ctx.beginPath()
   ctx.moveTo(x1, y1)
   ctx.lineTo(x2, y2)
-  ctx.strokeStyle = `rgba(0,0,0,${a})`
+  ctx.strokeStyle = `rgba(35,39,62,${a})`
   ctx.lineWidth = w
   ctx.lineCap = 'round'
   ctx.stroke()
 }
 
 function drawDoc(ctx, type, a) {
-  docPath(ctx)
-  ctx.fillStyle = `rgba(255,255,255,${a})`
-  ctx.fill()
-  ctx.lineWidth = 1.2
-  ctx.lineJoin = 'round'
-  ctx.strokeStyle = `rgba(0,0,0,${a})`
-  ctx.stroke()
-
-  // Folded corner
   const x = -DOC_W / 2
   const y = -DOC_H / 2
+  docPath(ctx)
+  const paper = ctx.createLinearGradient(x, y, x + DOC_W, y + DOC_H)
+  paper.addColorStop(0, `rgba(255,255,255,${a})`)
+  paper.addColorStop(1, `rgba(244,243,255,${a})`)
+  ctx.fillStyle = paper
+  ctx.shadowColor = `rgba(49,45,110,${0.12 * a})`
+  ctx.shadowBlur = 5
+  ctx.shadowOffsetY = 2
+  ctx.fill()
+  ctx.shadowColor = 'transparent'
+  ctx.shadowBlur = 0
+  ctx.shadowOffsetY = 0
+  ctx.lineWidth = 1.25
+  ctx.lineJoin = 'round'
+  ctx.strokeStyle = `rgba(35,39,62,${0.88 * a})`
+  ctx.stroke()
+
+  // folded corner with a graphite crease
   ctx.beginPath()
   ctx.moveTo(x + DOC_W - 9, y)
   ctx.lineTo(x + DOC_W - 9, y + 9)
   ctx.lineTo(x + DOC_W, y + 9)
+  ctx.strokeStyle = `rgba(49,55,80,${0.72 * a})`
+  ctx.lineWidth = 1
   ctx.stroke()
 
   const lx = x + 6
   const t = y + 13
-  const soft = 0.32 * a
+  const soft = 0.38 * a
+  ctx.beginPath()
+  ctx.arc(lx + 1, t - 4, 1.5, 0, Math.PI * 2)
+  ctx.fillStyle = `rgba(49,55,80,${0.85 * a})`
+  ctx.fill()
 
-  if (type === 'pdf') {
-    line(ctx, lx, t, lx + 18, t, 0.8 * a, 2)
-    line(ctx, lx, t + 6, lx + 26, t + 6, soft)
-    line(ctx, lx, t + 11, lx + 26, t + 11, soft)
-    line(ctx, lx, t + 16, lx + 15, t + 16, soft)
-    badge(ctx, 'PDF', a)
+  if (type === 'pdf' || type === 'docx' || type === 'doc') {
+    const widths = type === 'pdf' ? [25, 20, 24, 17] : [25, 23, 26, 20, 24]
+    widths.forEach((l, i) => line(ctx, lx, t + i * 5, lx + l, t + i * 5, i === 0 ? 0.72 * a : soft, i === 0 ? 1.6 : 1.1))
+    badge(ctx, type.toUpperCase(), a)
   } else if (type === 'xlsx') {
     const gx = lx
     const gy = t - 2
     const gw = 26
     const gh = 19
-    ctx.strokeStyle = `rgba(0,0,0,${0.55 * a})`
+    ctx.fillStyle = `rgba(49,55,80,${0.07 * a})`
+    ctx.fillRect(gx, gy, gw, gh)
+    ctx.strokeStyle = `rgba(35,39,62,${0.55 * a})`
     ctx.lineWidth = 0.9
     ctx.strokeRect(gx, gy, gw, gh)
-    for (let i = 1; i < 3; i++) line(ctx, gx + (gw / 3) * i, gy, gx + (gw / 3) * i, gy + gh, 0.4 * a, 0.9)
-    for (let i = 1; i < 4; i++) line(ctx, gx, gy + (gh / 4) * i, gx + gw, gy + (gh / 4) * i, 0.4 * a, 0.9)
-    ctx.fillStyle = `rgba(0,0,0,${0.75 * a})`
+    for (let i = 1; i < 3; i++) line(ctx, gx + (gw / 3) * i, gy, gx + (gw / 3) * i, gy + gh, 0.35 * a, 0.8)
+    for (let i = 1; i < 4; i++) line(ctx, gx, gy + (gh / 4) * i, gx + gw, gy + (gh / 4) * i, 0.35 * a, 0.8)
+    ctx.fillStyle = `rgba(49,55,80,${0.65 * a})`
     ctx.fillRect(gx, gy, gw / 3, gh / 4)
     badge(ctx, 'XLS', a)
   } else if (type === 'img') {
     const gx = lx
     const gy = t - 2
-    ctx.strokeStyle = `rgba(0,0,0,${0.55 * a})`
+    ctx.fillStyle = `rgba(49,55,80,${0.06 * a})`
+    ctx.fillRect(gx, gy, 26, 19)
+    ctx.strokeStyle = `rgba(35,39,62,${0.55 * a})`
     ctx.lineWidth = 0.9
     ctx.strokeRect(gx, gy, 26, 19)
     ctx.beginPath()
     ctx.arc(gx + 18, gy + 6, 2.4, 0, Math.PI * 2)
-    ctx.fillStyle = `rgba(0,0,0,${0.7 * a})`
+    ctx.fillStyle = `rgba(49,55,80,${0.78 * a})`
     ctx.fill()
     ctx.beginPath()
     ctx.moveTo(gx + 1, gy + 18)
@@ -123,25 +136,13 @@ function drawDoc(ctx, type, a) {
     ctx.lineTo(gx + 14, gy + 14)
     ctx.lineTo(gx + 18, gy + 11)
     ctx.lineTo(gx + 25, gy + 18)
-    ctx.strokeStyle = `rgba(0,0,0,${0.7 * a})`
+    ctx.strokeStyle = `rgba(35,39,62,${0.7 * a})`
     ctx.stroke()
     badge(ctx, 'IMG', a)
-  } else if (type === 'txt') {
-    const lens = [26, 22, 26, 18, 24]
-    lens.forEach((l, i) => line(ctx, lx, t - 1 + i * 5, lx + l, t - 1 + i * 5, soft * 1.25))
-    badge(ctx, 'TXT', a)
-  } else if (type === 'docx') {
-    line(ctx, lx, t, lx + 20, t, 0.8 * a, 2)
-    line(ctx, lx, t + 6, lx + 26, t + 6, soft)
-    line(ctx, lx, t + 11, lx + 24, t + 11, soft)
-    line(ctx, lx, t + 16, lx + 26, t + 16, soft)
-    badge(ctx, 'DOCX', a)
   } else {
-    line(ctx, lx, t, lx + 14, t, 0.8 * a, 2)
-    line(ctx, lx, t + 6, lx + 26, t + 6, soft)
-    line(ctx, lx, t + 11, lx + 26, t + 11, soft)
-    line(ctx, lx, t + 16, lx + 20, t + 16, soft)
-    badge(ctx, 'DOC', a)
+    const lens = [25, 22, 25, 18, 23]
+    lens.forEach((l, i) => line(ctx, lx, t - 1 + i * 5, lx + l, t - 1 + i * 5, soft, 1.1))
+    badge(ctx, 'TXT', a)
   }
 }
 

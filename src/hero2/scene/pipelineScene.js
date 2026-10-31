@@ -2,8 +2,8 @@ import { OUTLINE, getFolds, buildNeurons, mulberry32 } from './brain.js'
 import { FILE_TYPES, boxOf, drawFile, drawTextPage, drawChunkCard, drawRoundRect } from './icons.js'
 
 const TAU = Math.PI * 2
-const ACCENT = '#6258F5'
-const ACCENT_SOFT = '#F0EEFF'
+const ACCENT = '#303034'
+const ACCENT_SOFT = '#F0F0F1'
 const INDEX_INK = '#424753'
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v))
 const lerp = (a, b, t) => a + (b - a) * t
@@ -96,37 +96,46 @@ export class PipelineScene {
     this.W = W
     this.H = H
     this.dpr = dpr
-    const mobile = W < 650
+    const mobile = W < 540
     this.mobile = mobile
     let wps, R, C, lineY, cornerR
     const st = {}
 
     if (!mobile) {
-      const s = clamp(Math.min(W / 1180, H / 700), 0.94, 1.45)
-      const u = 1.05 * s
-      R = 184 * s
-      const x0 = W * 0.04
-      const len = W * 0.92
+      // Desktop: a true top-to-bottom serpentine pipeline.
+      // Stages alternate between left and right lanes around a compact brain hub.
+      const s = clamp(Math.min(W / 820, H / 680), 0.86, 1.08)
+      const u = 1.0 * s
+      R = 88 * s
+      C = { x: W * 0.5, y: H * 0.485 }
+      lineY = C.y
       this.s = s
       this.u = u
-      this.laneAmp = 66 * s
-      this.gateR = 26 * u
-      this.ramp = 64 * s
-      this.abstainAmp = this.laneAmp
-      const hdr = Math.max(this.laneAmp + this.gateR + 44 * s, 0.85 * R + 46 * s)
-      lineY = Math.max(H * 0.44, 92 + hdr)
-      this.hdr = hdr
-      wps = [[x0, lineY], [x0 + len, lineY]]
-      cornerR = 0
-      const D = (f) => f * len
-      Object.assign(st, {
-        upload: 36 * s, ext: D(0.155), chunk: D(0.285), embed: D(0.338),
-        index: D(0.392), retrieve: D(0.7), rerank: D(0.765), verify: D(0.83), answer: D(0.905), widget: len,
-      })
-      C = { x: x0 + D(0.531), y: lineY - 0.07 * R }
-      this.stubOff = -100 * s
-      this.speed = len * 0.068
-      this.x0 = x0
+      this.laneAmp = 18 * s
+      this.gateR = 14 * u
+      this.ramp = 30 * s
+      this.abstainAmp = 24 * s
+      this.hdr = 0
+
+      const point = (x, y) => [W * x, H * y]
+      wps = [
+        point(0.12, 0.025),
+        point(0.12, 0.075),
+        point(0.88, 0.185),
+        point(0.12, 0.315),
+        point(0.34, 0.405),
+        point(0.50, 0.485),
+        point(0.66, 0.555),
+        point(0.88, 0.605),
+        point(0.12, 0.725),
+        point(0.88, 0.825),
+        point(0.50, 0.905),
+        point(0.50, 0.935),
+      ]
+      cornerR = 30 * s
+      this.stubOff = -42 * s
+      this.speed = 0
+      this.x0 = W * 0.23
     } else {
       const m = clamp(W / 390, 0.8, 1.6)
       const u = clamp((0.55 * W) / 390, 0.5, 0.95)
@@ -168,6 +177,22 @@ export class PipelineScene {
     this.lineY = lineY
     this.pts = buildPolyline(wps, cornerR)
     this.len = this.pts.length - 1
+    if (!mobile) {
+      const at = (x, y) => this.dOf(W * x, H * y)
+      Object.assign(st, {
+        upload: at(0.12, 0.075),
+        ext: at(0.88, 0.185),
+        chunk: at(0.12, 0.315),
+        embed: at(0.66, 0.555),
+        index: at(0.88, 0.605),
+        retrieve: at(0.12, 0.725),
+        rerank: at(0.50, 0.775),
+        verify: at(0.88, 0.825),
+        answer: at(0.50, 0.865),
+        widget: at(0.50, 0.905),
+      })
+      this.speed = this.len * 0.105
+    }
 
     if (mobile) {
       const L1 = this.mobL1
@@ -251,32 +276,32 @@ export class PipelineScene {
   }
 
   buildAnchors() {
-    const { s, u } = this
+    const { s, W, H } = this
+    if (!this.mobile) {
+      this.anchors = this.stationD.map((d, i) => {
+        const p = i === 6 ? this.widgetPos() : this.pos(d)
+        // Put the step markers in alternating side rails. The actual route
+        // continues vertically between them, rather than reading left-to-right.
+        let bx = p.x < W * 0.5 ? W * 0.055 : W * 0.945
+        let by = p.y
+        if (i === 6) {
+          bx = W * 0.86
+          by = Math.min(H - 42 * s, p.y - 4 * s)
+        }
+        return { x: p.x, y: p.y, bx, by }
+      })
+      this.labelMode = 'full'
+      this.titleFs = 11 * s
+      return
+    }
+
     this.anchors = this.stationD.map((d, i) => {
       const p = i === 6 ? this.widgetPos() : this.pos(d)
-      let bx
-      let by
-      if (!this.mobile) {
-        by = this.lineY + this.laneAmp + this.gateR + 24 * s
-        bx = p.x
-      } else {
-        by = i === 6 ? p.y + 64 * u : p.y
-        bx = i === 6 ? p.x : i < 4 ? this.xL - 17 * s : this.xR - 17 * s
-      }
+      const by = i === 6 ? p.y + 64 * this.u : p.y
+      const bx = i === 6 ? p.x : i < 4 ? this.xL - 17 * s : this.xR - 17 * s
       return { x: p.x, y: p.y, bx, by }
     })
-    this.labelMode = 'full'
-    if (!this.mobile) {
-      let minPitch = Infinity
-      const ds = this.anchors.map((_, i) => i)
-      for (let k = 1; k < ds.length; k++) {
-        if (k === 4) continue
-        minPitch = Math.min(minPitch, this.anchors[k].x - this.anchors[k - 1].x)
-      }
-      this.labelMode = minPitch < 44 ? 'num' : 'full'
-      this.titleFs = clamp(minPitch * 0.21, 9.5, 12.5 * s)
-    } else this.labelMode = 'num'
-    void u
+    this.labelMode = 'num'
   }
 
   prerenderBrain() {
@@ -296,12 +321,22 @@ export class PipelineScene {
       g.closePath()
     }
     outline()
-    g.fillStyle = '#ffffff'
+    const skin = g.createLinearGradient(C.x - R, C.y - R, C.x + R, C.y + R)
+    skin.addColorStop(0, '#ffffff')
+    skin.addColorStop(0.52, '#fafafa')
+    skin.addColorStop(1, '#f0f0f1')
+    g.fillStyle = skin
     g.fill()
     g.save()
     g.clip()
-    g.strokeStyle = 'rgba(49,55,80,0.32)'
-    g.lineWidth = Math.max(0.7, R * 0.0042)
+    const innerLight = g.createRadialGradient(C.x + R * 0.16, C.y - R * 0.2, R * 0.04, C.x, C.y, R * 1.12)
+    innerLight.addColorStop(0, 'rgba(49,55,80,0.10)')
+    innerLight.addColorStop(0.7, 'rgba(49,55,80,0.025)')
+    innerLight.addColorStop(1, 'rgba(49,55,80,0)')
+    g.fillStyle = innerLight
+    g.fillRect(C.x - R * 1.1, C.y - R, R * 2.2, R * 2)
+    g.strokeStyle = 'rgba(49,55,80,0.25)'
+    g.lineWidth = Math.max(0.8, R * 0.0045)
     g.lineCap = 'round'
     g.lineJoin = 'round'
     for (const c of getFolds(this.mobile ? 1 : 0)) {
@@ -311,10 +346,23 @@ export class PipelineScene {
     }
     g.restore()
     outline()
-    g.lineWidth = Math.max(1.4, R * 0.007)
+    g.lineWidth = Math.max(2.2, R * 0.010)
     g.lineJoin = 'round'
-    g.strokeStyle = '#000'
+    g.strokeStyle = 'rgba(39,39,43,0.94)'
+    g.shadowColor = 'rgba(49,55,80,0.22)'
+    g.shadowBlur = R * 0.045
     g.stroke()
+    g.shadowBlur = 0
+    // Fine inner contour gives the cortex a layered, engraved finish.
+    g.save()
+    g.translate(C.x, C.y)
+    g.scale(0.972, 0.972)
+    g.translate(-C.x, -C.y)
+    outline()
+    g.lineWidth = Math.max(0.8, R * 0.003)
+    g.strokeStyle = 'rgba(90,90,96,0.22)'
+    g.stroke()
+    g.restore()
     this.brainImg = { cv, x: x0, y: y0, w, h }
   }
 
@@ -504,10 +552,9 @@ export class PipelineScene {
     const { W, H, dpr } = this
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
     ctx.clearRect(0, 0, W, H)
-    this.drawTrack(ctx)
-    if (!this.mobile) this.drawHeaders(ctx)
     this.drawGlow(ctx)
     this.drawBrain(ctx)
+    this.drawTrack(ctx)
     this.drawLaserOutline(ctx)
     this.drawWidget(ctx)
     this.drawAbstainNode(ctx)
@@ -534,7 +581,7 @@ export class PipelineScene {
     } else {
       ctx.setLineDash([3, 9])
       ctx.lineDashOffset = -this.t * 16
-      ctx.strokeStyle = `rgba(98,88,245,${base * 0.55})`
+      ctx.strokeStyle = `rgba(49,55,80,${base * 0.55})`
     }
     ctx.stroke()
     ctx.setLineDash([])
@@ -547,9 +594,24 @@ export class PipelineScene {
       [st.verify - 6, st.answer, (d) => this.abstainOff(d)],
     ]
     for (const [a, b, f] of lines) {
-      this.strokeAlong(ctx, a, b, f, 0.12, false)
-      this.strokeAlong(ctx, a, b, f, 0.55, true)
+      this.strokeAlong(ctx, a, b, f, 0.075, false)
+      this.strokeAlong(ctx, a, b, f, 0.72, true)
     }
+    // A travelling signal makes the main knowledge rail feel energized,
+    // while keeping the original hand-drawn pipeline language.
+    const signalD = (this.t * this.speed * 0.23) % this.len
+    const signal = this.pos(signalD)
+    const signalGlow = ctx.createRadialGradient(signal.x, signal.y, 0, signal.x, signal.y, 15 * this.u)
+    signalGlow.addColorStop(0, 'rgba(49,55,80,0.38)')
+    signalGlow.addColorStop(1, 'rgba(49,55,80,0)')
+    ctx.fillStyle = signalGlow
+    ctx.beginPath()
+    ctx.arc(signal.x, signal.y, 15 * this.u, 0, TAU)
+    ctx.fill()
+    ctx.beginPath()
+    ctx.arc(signal.x, signal.y, 2.2 * this.u, 0, TAU)
+    ctx.fillStyle = ACCENT
+    ctx.fill()
     // visitor-question stub
     const top = this.pos(st.retrieve, this.stubOff)
     const bot = this.pos(st.retrieve, 0)
@@ -557,7 +619,7 @@ export class PipelineScene {
     ctx.moveTo(top.x, top.y)
     ctx.lineTo(bot.x, bot.y)
     ctx.setLineDash([2, 5])
-    ctx.strokeStyle = 'rgba(98,88,245,0.3)'
+    ctx.strokeStyle = 'rgba(49,55,80,0.3)'
     ctx.lineWidth = 1.1
     ctx.stroke()
     ctx.setLineDash([])
@@ -602,10 +664,6 @@ export class PipelineScene {
         ctx.stroke()
       }
     }
-    // brain label
-    ctx.textAlign = 'center'
-    ctx.fillStyle = 'rgba(49,55,80,0.68)'
-    ctx.fillText('YOUR KNOWLEDGE BASE', this.C.x, this.C.y - 0.86 * this.R - 16 * s)
   }
 
   brainPulse() {
@@ -614,15 +672,42 @@ export class PipelineScene {
   }
 
   drawGlow(ctx) {
-    const { C, R } = this
+    const { C, R, u } = this
     const strength = Math.max(this.glow, this.brainPulse())
-    const e = 0.01 + 0.11 * strength
-    const g = ctx.createRadialGradient(C.x, C.y, R * 0.2, C.x, C.y, R * 1.45)
-    g.addColorStop(0, `rgba(98,88,245,${e * 0.36})`)
-    g.addColorStop(0.58, `rgba(98,88,245,${0.004 + strength * 0.025})`)
-    g.addColorStop(1, 'rgba(98,88,245,0)')
+    const e = 0.015 + 0.13 * strength
+    const g = ctx.createRadialGradient(C.x, C.y, R * 0.12, C.x, C.y, R * 1.62)
+    g.addColorStop(0, `rgba(49,55,80,${e * 0.52})`)
+    g.addColorStop(0.48, `rgba(49,55,80,${0.012 + strength * 0.04})`)
+    g.addColorStop(1, 'rgba(49,55,80,0)')
     ctx.fillStyle = g
-    ctx.fillRect(C.x - R * 1.6, C.y - R * 1.5, R * 3.2, R * 3.1)
+    ctx.fillRect(C.x - R * 1.8, C.y - R * 1.7, R * 3.6, R * 3.4)
+
+    // Orbit guides frame the brain as a living knowledge core.
+    ctx.save()
+    ctx.translate(C.x, C.y)
+    ctx.rotate(-0.16)
+    for (let i = 0; i < 2; i++) {
+      ctx.beginPath()
+      ctx.ellipse(0, 0, R * (1.28 + i * 0.13), R * (0.83 + i * 0.1), 0, Math.PI * 0.08, Math.PI * 1.92)
+      ctx.setLineDash(i ? [2, 8] : [1, 6])
+      ctx.lineDashOffset = -this.t * (i ? 8 : 13)
+      ctx.strokeStyle = i
+        ? `rgba(49,55,80,${0.10 + strength * 0.09})`
+        : `rgba(49,55,80,${0.12 + strength * 0.12})`
+      ctx.lineWidth = i ? 1 : 1.2
+      ctx.stroke()
+    }
+    ctx.setLineDash([])
+    const angle = this.t * 0.34
+    const ox = Math.cos(angle) * R * 1.28
+    const oy = Math.sin(angle) * R * 0.83
+    ctx.beginPath()
+    ctx.arc(ox, oy, 3.2 * u, 0, TAU)
+    ctx.fillStyle = ACCENT
+    ctx.shadowColor = 'rgba(49,55,80,0.55)'
+    ctx.shadowBlur = 12 * u
+    ctx.fill()
+    ctx.restore()
   }
 
   drawLaserOutline(ctx) {
@@ -643,10 +728,10 @@ export class PipelineScene {
     ctx.lineJoin = 'round'
     ctx.lineCap = 'round'
 
-    // A soft violet aura sits just outside the brain contour.
-    ctx.strokeStyle = `rgba(98,88,245,${0.9 * strength})`
+    // A soft soft graphite aura sits just outside the brain contour.
+    ctx.strokeStyle = `rgba(49,55,80,${0.9 * strength})`
     ctx.lineWidth = 1.55
-    ctx.shadowColor = `rgba(98,88,245,${0.95 * strength})`
+    ctx.shadowColor = `rgba(49,55,80,${0.95 * strength})`
     ctx.shadowBlur = this.R * 0.16 * strength
     ctx.stroke()
 
@@ -654,9 +739,9 @@ export class PipelineScene {
     const trace = Math.min(perimeter * 0.16, this.R * 0.72)
     ctx.setLineDash([trace, Math.max(1, perimeter - trace)])
     ctx.lineDashOffset = -((this.t * this.R * 1.9) % perimeter)
-    ctx.strokeStyle = `rgba(151,140,255,${0.98 * strength})`
+    ctx.strokeStyle = `rgba(49,55,80,${0.98 * strength})`
     ctx.lineWidth = 2.5
-    ctx.shadowColor = `rgba(98,88,245,${strength})`
+    ctx.shadowColor = `rgba(49,55,80,${strength})`
     ctx.shadowBlur = this.R * 0.2 * strength
     ctx.stroke()
     ctx.setLineDash([])
@@ -710,15 +795,15 @@ export class PipelineScene {
     const { u } = this
     const p = this.widgetPos()
     const k = u * (this.mobile ? 1 : Math.min(1, this.W / 1100))
-    const w = 86 * k
-    const h = 112 * k
+    const w = 98 * k
+    const h = 128 * k
     const x = p.x - w / 2
     const y = p.y - h / 2
     const font = Math.max(6.2, 7 * k)
     ctx.save()
     drawRoundRect(ctx, x, y, w, h, 8 * k)
     ctx.fillStyle = '#fff'
-    ctx.shadowColor = 'rgba(98,88,245,0.14)'
+    ctx.shadowColor = 'rgba(49,55,80,0.14)'
     ctx.shadowBlur = 22 * k
     ctx.shadowOffsetY = 7 * k
     ctx.fill()
@@ -746,9 +831,9 @@ export class PipelineScene {
     ctx.fillText('KNOWLEDGE AI', x + 19 * k, y + 10 * k)
 
     // Visitor prompt
-    const qx = x + w * 0.31
-    const qy = y + 27 * k
-    const qw = w * 0.6
+    const qx = x + w * 0.29
+    const qy = y + 29 * k
+    const qw = w * 0.63
     drawRoundRect(ctx, qx, qy, qw, 13 * k, 5 * k)
     ctx.fillStyle = 'rgba(35,39,62,0.92)'
     ctx.fill()
@@ -760,16 +845,16 @@ export class PipelineScene {
     ctx.stroke()
 
     // Source-backed answer
-    drawRoundRect(ctx, x + 8 * k, y + 46 * k, w - 16 * k, 30 * k, 5 * k)
-    ctx.fillStyle = 'rgba(98,88,245,0.055)'
+    drawRoundRect(ctx, x + 8 * k, y + 49 * k, w - 16 * k, 34 * k, 6 * k)
+    ctx.fillStyle = 'rgba(49,55,80,0.055)'
     ctx.fill()
     ctx.font = `600 ${font}px ${SANS}`
     ctx.fillStyle = 'rgba(35,39,62,0.84)'
-    ctx.fillText('Found in your files', x + 13 * k, y + 54 * k)
+    ctx.fillText('Found in your files', x + 13 * k, y + 58 * k)
     ctx.strokeStyle = 'rgba(35,39,62,0.3)'
     ctx.lineWidth = 1.15 * k
     for (let i = 0; i < 2; i++) {
-      const yy = y + (62 + i * 6) * k
+      const yy = y + (67 + i * 6) * k
       ctx.beginPath()
       ctx.moveTo(x + 13 * k, yy)
       ctx.lineTo(x + (i === 0 ? 62 : 51) * k, yy)
@@ -779,7 +864,7 @@ export class PipelineScene {
     const newest = this.widgetMsgs[this.widgetMsgs.length - 1]
     const fresh = newest ? 1 - smooth(0, 1.3, this.t - newest.born) : 0
     const sx = x + 8 * k
-    const sy = y + 81 * k
+    const sy = y + 88 * k
     const sw = 56 * k
     drawRoundRect(ctx, sx, sy, sw, 14 * k, 7 * k)
     ctx.fillStyle = ACCENT_SOFT
@@ -792,7 +877,7 @@ export class PipelineScene {
     ctx.fillStyle = ACCENT
     ctx.fillText('SOURCES CITED', sx + 13 * k, sy + 7.2 * k)
 
-    drawRoundRect(ctx, x + 8 * k, y + 99 * k, w - 16 * k, 7 * k, 3.5 * k)
+    drawRoundRect(ctx, x + 8 * k, y + 108 * k, w - 16 * k, 9 * k, 4.5 * k)
     ctx.strokeStyle = 'rgba(35,39,62,0.2)'
     ctx.lineWidth = 1
     ctx.stroke()
@@ -843,7 +928,7 @@ export class PipelineScene {
     for (const f of list) {
       const pose = this.filePose(f)
       const appear = smooth(0, st.upload + 10, f.d) * smooth(0, 0.25, this.t - f.born + (f.born < 0.01 ? 1 : 0))
-      const sc = u * lerp(0.6, 1, smooth(0, st.upload, f.d)) * (f.spread ? lerp(0.7, 1, smooth(0, 0.35, this.t - f.born)) : 1)
+      const sc = 1.14 * u * lerp(0.6, 1, smooth(0, st.upload, f.d)) * (f.spread ? lerp(0.7, 1, smooth(0, 0.35, this.t - f.born)) : 1)
       const wipe = smooth(st.ext - band, st.ext + band, f.d)
       ctx.save()
       ctx.translate(pose.x, pose.y)
@@ -852,6 +937,19 @@ export class PipelineScene {
       const fx = f.w / 2 - wipe * f.w
       const a = Math.max(0.0001, appear)
       if (wipe < 0.999) {
+        // Offset ghost sheets imply a real document stack entering the system.
+        for (let sheet = 2; sheet >= 1; sheet--) {
+          ctx.save()
+          ctx.translate(-sheet * 2.2, -sheet * 1.7)
+          ctx.globalAlpha = a * (0.16 + sheet * 0.06)
+          ctx.fillStyle = '#f2f2f3'
+          drawRoundRect(ctx, -f.w / 2, -f.h / 2, f.w, f.h, 2.5)
+          ctx.fill()
+          ctx.strokeStyle = 'rgba(80,80,86,0.36)'
+          ctx.lineWidth = 1
+          ctx.stroke()
+          ctx.restore()
+        }
         ctx.save()
         ctx.beginPath()
         ctx.rect(-f.w, -f.h, fx + f.w, f.h * 2)
@@ -868,8 +966,8 @@ export class PipelineScene {
         ctx.restore()
         if (wipe < 0.999) {
           const g = ctx.createLinearGradient(fx - 8, 0, fx, 0)
-          g.addColorStop(0, 'rgba(98,88,245,0)')
-          g.addColorStop(1, 'rgba(98,88,245,0.2)')
+          g.addColorStop(0, 'rgba(49,55,80,0)')
+          g.addColorStop(1, 'rgba(49,55,80,0.2)')
           ctx.fillStyle = g
           ctx.fillRect(fx - 8, -f.h / 2 - 5, 8, f.h + 10)
           ctx.beginPath()
@@ -903,24 +1001,38 @@ export class PipelineScene {
       ctx.save()
       ctx.translate(p.x, p.y)
       ctx.rotate(p.angle)
-      ctx.scale(u, u)
+      ctx.scale(1.12 * u, 1.12 * u)
       ctx.globalAlpha = 1 - vec
       drawChunkCard(ctx, 1, cw, ch)
       ctx.globalAlpha = vec
       // Passage vectors emerge as the excerpts reach indexing.
-      const dots = [[-9, -4], [0, -4], [9, -4], [-9, 5], [0, 5], [9, 5]]
-      ctx.beginPath()
-      dots.forEach(([x, y], i) => i ? ctx.lineTo(x, y) : ctx.moveTo(x, y))
-      ctx.strokeStyle = INDEX_INK
-      ctx.globalAlpha = vec * 0.48
-      ctx.lineWidth = 1.25
-      ctx.stroke()
-      for (const [x, y] of dots) {
+      const dots = [[-10, -5], [0, -5], [10, -5], [-10, 5], [0, 5], [10, 5]]
+      ctx.strokeStyle = 'rgba(49,55,80,0.58)'
+      ctx.globalAlpha = vec * 0.8
+      ctx.lineWidth = 1
+      for (let row = 0; row < 2; row++) {
         ctx.beginPath()
-        ctx.arc(x, y, 2.2, 0, TAU)
-        ctx.fillStyle = INDEX_INK
-        ctx.globalAlpha = vec
+        ctx.moveTo(-10, row ? 5 : -5)
+        ctx.lineTo(10, row ? 5 : -5)
+        ctx.stroke()
+      }
+      ctx.beginPath()
+      ctx.moveTo(-10, -5)
+      ctx.lineTo(-10, 5)
+      ctx.moveTo(0, -5)
+      ctx.lineTo(0, 5)
+      ctx.moveTo(10, -5)
+      ctx.lineTo(10, 5)
+      ctx.stroke()
+      for (let i = 0; i < dots.length; i++) {
+        const [x, y] = dots[i]
+        ctx.beginPath()
+        ctx.arc(x, y, 2.4, 0, TAU)
+        ctx.fillStyle = i === 2 || i === 3 ? ACCENT : '#fff'
         ctx.fill()
+        ctx.strokeStyle = 'rgba(70,70,76,0.68)'
+        ctx.lineWidth = 0.9
+        ctx.stroke()
       }
       ctx.restore()
     }
@@ -1134,7 +1246,7 @@ export class PipelineScene {
       ctx.arc(p.x, p.y, r, 0, TAU)
       const alpha = (p.kind === 'node' || p.kind === 'entry' || p.kind === 'abstain' ? 0.36 : 0.5) * (1 - k)
       ctx.strokeStyle = p.kind === 'widget'
-        ? `rgba(98,88,245,${alpha})`
+        ? `rgba(49,55,80,${alpha})`
         : `rgba(49,55,80,${alpha})`
       ctx.lineWidth = 1.1
       ctx.stroke()
@@ -1144,39 +1256,47 @@ export class PipelineScene {
   drawLabels(ctx) {
     const { s } = this
     const full = this.labelMode === 'full'
-    const bs = this.mobile ? 7.5 * s : 10.5 * s
+    const bs = this.mobile ? 7.5 * s : 9.5 * s
+    const stepNotes = ['FILES IN', 'TEXT EXTRACT', 'SMART CHUNKS', 'VECTOR INDEX', 'HYBRID SEARCH', 'SOURCE CHECK', 'CITED RESPONSE']
+
     this.anchors.forEach((a, i) => {
-      // guide tick (desktop)
-      if (!this.mobile && i !== 6) {
-        const top = i === 1 ? this.lineY + this.laneAmp + this.gateR + 6 : this.lineY + this.gateR + 6
+      if (!this.mobile) {
         ctx.beginPath()
-        ctx.moveTo(a.x, top)
-        ctx.lineTo(a.x, a.by - bs - 4)
-        ctx.setLineDash([1.5, 3.5])
-        ctx.strokeStyle = 'rgba(0,0,0,0.2)'
+        ctx.moveTo(a.x, a.y)
+        ctx.lineTo(a.bx, a.by)
+        ctx.setLineDash([2, 5])
+        ctx.strokeStyle = 'rgba(35,35,39,0.25)'
         ctx.lineWidth = 1
         ctx.stroke()
         ctx.setLineDash([])
       }
+
       ctx.beginPath()
       ctx.arc(a.bx, a.by, bs, 0, TAU)
       ctx.fillStyle = '#fff'
       ctx.fill()
-      ctx.strokeStyle = 'rgba(0,0,0,0.55)'
+      ctx.strokeStyle = 'rgba(0,0,0,0.58)'
       ctx.lineWidth = 1.1
       ctx.stroke()
+
       ctx.font = `600 ${(this.mobile ? 8 : 10.5) * s}px ${SANS}`
       ctx.textAlign = 'center'
       ctx.textBaseline = 'middle'
       ctx.fillStyle = '#000'
       ctx.fillText(String(i + 1), a.bx, a.by + 0.5)
+
       if (full) {
-        ctx.font = `500 ${this.titleFs}px ${SANS}`
-        ctx.fillStyle = 'rgba(0,0,0,0.68)'
+        ctx.font = `650 ${Math.max(10, 10.5 * s)}px ${SANS}`
+        ctx.fillStyle = 'rgba(20,20,23,0.92)'
         ctx.fillText(STEPS[i].title, a.bx, a.by + bs + 15 * s)
+        if (!this.mobile) {
+          ctx.font = `500 ${Math.max(7.5, 7.8 * s)}px ${SANS}`
+          ctx.fillStyle = 'rgba(90,90,96,0.82)'
+          ctx.fillText(stepNotes[i], a.bx, a.by + bs + 28 * s)
+        }
       }
     })
-    // brain label (mobile)
+
     if (this.mobile) {
       ctx.font = `500 ${10 * s}px ${SANS}`
       ctx.textAlign = 'center'
@@ -1184,5 +1304,4 @@ export class PipelineScene {
       ctx.fillText('Knowledge base', this.C.x, this.C.y + 0.9 * this.R + 14)
     }
   }
-
 }

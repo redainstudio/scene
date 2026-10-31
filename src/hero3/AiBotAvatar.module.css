@@ -1,0 +1,27 @@
+.root {
+  --bot-1: #66a6ff;
+  --bot-2: #0059d4;
+  --bot-face: #101010;
+  --bot-ground: rgba(0, 0, 0, 0.08);
+  --bot-ground-core: rgba(0, 0, 0, 0.12);
+  --bot-heart: #ff4f7e;
+  --bot-blush: rgba(255, 110, 150, 0.55);
+  position: relative;
+  display: block;
+  flex: 0 0 auto;
+  width: var(--bot-size, 112px);
+  height: var(--bot-size, 112px);
+  overflow: visible;
+}
+.svg {
+  position: absolute;
+  inset: -25%;
+  display: block;
+  width: 150%;
+  height: 150%;
+  overflow: visible;
+}
+.ground { fill: var(--bot-ground); }
+.core { fill: var(--bot-ground-core); }
+.blush { fill: var(--bot-blush); }
+.heart { fill: var(--bot-heart); }

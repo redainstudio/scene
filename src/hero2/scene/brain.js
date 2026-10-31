@@ -14,14 +14,16 @@ export function mulberry32(a) {
   }
 }
 
-// Side view, facing right: cerebrum, cerebellum bump and brain stem.
+// Signature side-profile brain, refined with a slightly broader crown,
+// deeper frontal lobe and a more sculptural stem/cerebellum transition.
 const CONTROL_POINTS = [
-  [-0.99, 0.02], [-0.93, -0.3], [-0.72, -0.58], [-0.38, -0.74],
-  [0.02, -0.78], [0.42, -0.72], [0.78, -0.5], [0.97, -0.18],
-  [0.99, 0.12], [0.88, 0.3], [0.66, 0.35], [0.5, 0.46],
-  [0.28, 0.46], [0.16, 0.38], [0.15, 0.6], [0.2, 0.88],
-  [0.04, 0.9], [-0.06, 0.6], [-0.12, 0.5], [-0.32, 0.64],
-  [-0.58, 0.62], [-0.72, 0.46], [-0.8, 0.28], [-0.94, 0.2],
+  [-1.00, 0.00], [-0.97, -0.28], [-0.82, -0.52], [-0.57, -0.69],
+  [-0.28, -0.78], [0.08, -0.80], [0.43, -0.72], [0.73, -0.55],
+  [0.94, -0.28], [1.00, 0.02], [0.94, 0.25], [0.78, 0.39],
+  [0.62, 0.42], [0.48, 0.53], [0.30, 0.50], [0.20, 0.42],
+  [0.18, 0.64], [0.23, 0.88], [0.08, 0.94], [-0.04, 0.67],
+  [-0.14, 0.53], [-0.34, 0.66], [-0.60, 0.65], [-0.79, 0.49],
+  [-0.88, 0.29], [-0.98, 0.18],
 ]
 
 function catmullClosed(pts, seg) {
@@ -180,7 +182,7 @@ export function buildNeurons() {
   const rnd = mulberry32(31)
   const nodes = []
   let guard = 0
-  while (nodes.length < 38 && guard++ < 4000) {
+  while (nodes.length < 46 && guard++ < 5200) {
     const x = -0.95 + rnd() * 1.9
     const y = -0.72 + rnd() * 1.2
     if (!inside(OUTLINE, x, y) || y > 0.42) continue
