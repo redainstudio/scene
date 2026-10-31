@@ -73,6 +73,10 @@ export function AiBotAvatar({
     "--bot-size": `${size}px`,
     "--bot-1": colors?.[0] ?? "#66a6ff",
     "--bot-2": colors?.[1] ?? "#0059d4",
+    position: "relative",
+    display: "block",
+    flex: "0 0 auto",
+    overflow: "visible",
     width: `${size}px`,
     height: `${size}px`,
     ...style,
@@ -92,10 +96,10 @@ export function AiBotAvatar({
         aria-hidden="true"
         style={{
           position: "absolute",
-          inset: "-25%",
+          inset: `${-size * 0.25}px`,
           display: "block",
-          width: "150%",
-          height: "150%",
+          width: `${size * 1.5}px`,
+          height: `${size * 1.5}px`,
           overflow: "visible",
         }}
       >
