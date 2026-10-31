@@ -43,3 +43,7 @@ body {
 .hero3-empty__avatar {
   flex: 0 0 auto;
 }
+
+body {
+  overflow: hidden !important;
+}
