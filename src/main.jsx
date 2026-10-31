@@ -6,7 +6,7 @@ import { createRoot } from 'react-dom/client'
 import './hero2/hero2.css'
 
 const path = window.location.pathname.replace(/\/+$/, '')
-const page = path === '/hero3' ? import('./Hero3.jsx') : path === '/hero2' ? import('./Hero2.jsx') : import('./App.jsx')
+const page = path === '/hero4' ? import('./Hero4.jsx') : path === '/hero3' ? import('./Hero3.jsx') : path === '/hero2' ? import('./Hero2.jsx') : import('./App.jsx')
 
 page.then(({ default: Page }) => {
   createRoot(document.getElementById('root')).render(
