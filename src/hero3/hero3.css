@@ -1,27 +1,36 @@
 /*
- * Hero3 is a single-viewport scene. This stylesheet is imported only by
- * Hero3, so these document-level scroll locks do not affect other routes.
+ * Hero3 owns the viewport. Fix the React mount itself to the viewport so
+ * animated SVG overflow cannot enlarge the document's scrollable area.
  */
 html,
-body,
-#root {
-  box-sizing: border-box;
+body {
   width: 100%;
   height: 100%;
-  min-width: 0;
-  min-height: 0;
-  margin: 0;
-  overflow: hidden !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: clip !important;
   overscroll-behavior: none;
 }
 
+#root {
+  position: fixed !important;
+  inset: 0 !important;
+  width: auto !important;
+  height: auto !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: clip !important;
+  contain: strict;
+}
+
 .hero3-empty {
-  position: fixed;
+  position: absolute;
   inset: 0;
   box-sizing: border-box;
-  width: 100vw;
-  height: 100vh;
-  height: 100dvh;
+  width: auto;
+  height: auto;
   min-width: 0;
   min-height: 0;
   display: flex;
