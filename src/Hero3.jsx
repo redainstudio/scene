@@ -21,7 +21,7 @@ export default function Hero3() {
       <div
         style={{
           position: 'relative',
-          width: 'clamp(300px, 38vw, 520px)',
+          width: 'clamp(260px, 32vw, 430px)',
           aspectRatio: '926 / 1500',
           flex: '0 1 auto',
         }}
@@ -45,7 +45,10 @@ export default function Hero3() {
 
         <AiBotAvatar
           className="hero3-empty__avatar"
-          size={112}
+          size={240}
+          colors={['#ffffff', '#ffffff']}
+          outline="#101010"
+          outlineWidth={0.8}
           emotion="happy"
           activity="idle"
           lookAround
