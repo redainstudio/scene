@@ -11,16 +11,20 @@ export default function Hero3() {
       style={{
         position: 'fixed',
         inset: 0,
-        display: 'flex',
-        alignItems: 'flex-end',
-        justifyContent: 'center',
+        width: '100vw',
+        height: '100vh',
+        minHeight: '100vh',
+        display: 'block',
         overflow: 'hidden',
         backgroundColor: '#ffffff',
       }}
     >
       <div
         style={{
-          position: 'relative',
+          position: 'absolute',
+          left: '50%',
+          bottom: 0,
+          transform: 'translateX(-50%)',
           width: 'clamp(260px, 32vw, 430px)',
           aspectRatio: '926 / 1500',
           flex: '0 1 auto',
