@@ -12,7 +12,7 @@ export default function Hero3() {
         position: 'fixed',
         inset: 0,
         display: 'flex',
-        alignItems: 'center',
+        alignItems: 'flex-end',
         justifyContent: 'center',
         overflow: 'hidden',
         backgroundColor: '#ffffff',
