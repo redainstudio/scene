@@ -14,7 +14,7 @@ export type AiBotEmotion =
   | "wink";
 export type AiBotMotion = "jump" | "spin" | "bounce" | "wiggle" | "float";
 export type AiBotActivity = "idle" | "speaking" | "listening";
-export type AiBotShape = "pebble" | "circle" | "squircle" | "flower" | "blob" | "mechanical";
+export type AiBotShape = "pebble" | "circle" | "squircle" | "flower" | "blob";
 
 export const AI_BOT_EMOTIONS: AiBotEmotion[] = [
   "neutral",
@@ -28,7 +28,7 @@ export const AI_BOT_EMOTIONS: AiBotEmotion[] = [
   "sleepy",
 ];
 export const AI_BOT_MOTIONS: AiBotMotion[] = ["jump", "spin", "bounce", "float", "wiggle"];
-export const AI_BOT_SHAPES: AiBotShape[] = ["pebble", "circle", "squircle", "flower", "blob", "mechanical"];
+export const AI_BOT_SHAPES: AiBotShape[] = ["pebble", "circle", "squircle", "flower", "blob"];
 
 /* ---------------------------------------------------------------- *
  * Geometry (body in viewBox -16 -16 32 32)
@@ -74,12 +74,6 @@ function radius(shape: AiBotShape, th: number, t: number, level: number) {
       const x = Math.abs(c(th));
       const y = Math.abs(Math.sin(th));
       return 0.9 / (x ** 4 + y ** 4) ** 0.25 + (0.008 + level * 0.02) * c(4 * th + t * 0.6);
-    }
-    case "mechanical": {
-      const sector = Math.PI / 4;
-      const offset = ((th % sector) + sector) % sector - sector / 2;
-      const octagon = Math.cos(Math.PI / 8) / Math.cos(offset);
-      return octagon + (0.003 + level * 0.006) * c(4 * th + t * 0.25);
     }
     case "flower":
       return 0.95 + (0.075 + level * 0.03) * c(8 * th) + 0.012 * c(3 * th + t * 0.6);
@@ -962,7 +956,7 @@ export function createAiBot(els: AiBotElements, options: AiBotOptions = {}): AiB
 
     // Body.
     const wob = cur.wobble + level * 0.6 + tickle * 0.25;
-    const snap = shapeNow === "mechanical" ? 45 : shapeNow === "squircle" ? 90 : shapeNow === "blob" ? 120 : shapeNow === "pebble" ? 72 : 0;
+    const snap = shapeNow === "squircle" ? 90 : shapeNow === "blob" ? 120 : shapeNow === "pebble" ? 72 : 0;
     const rate = snap ? 0 : 3.5 + level * 18;
     spin = reduce ? spin : (spin + dt * rate * cur.spin) % 360;
     if (snap) spin += (Math.round(spin / snap) * snap - spin) * Math.min(1, dt * 4);
