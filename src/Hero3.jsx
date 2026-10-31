@@ -52,7 +52,7 @@ export default function Hero3() {
         <AiBotAvatar
           className="hero3-empty__avatar"
           size={240}
-          colors={['#ffffff', '#ffffff']}
+          colors={['#ffffff', '#e9e9e9']}
           outline="#101010"
           outlineWidth={0.18}
           emotion="happy"
