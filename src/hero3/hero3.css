@@ -1,0 +1,5 @@
+.hero3-empty {
+  width:100%; min-height:100vh; min-height:100svh;
+  display:grid; place-items:center; overflow:hidden; background:#fff;
+}
+.hero3-empty__avatar { display:block; }
